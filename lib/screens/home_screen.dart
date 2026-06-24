@@ -108,7 +108,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
   final FocusNode _focusNodeSwitch = FocusNode();
   final FocusNode _focusNodeSelect = FocusNode();
 
-  final FocusNode _focusNodeSystemProxy = FocusNode();
   final FocusNode _focusNodeRule = FocusNode();
   final FocusNode _focusNodeGlobal = FocusNode();
   final FocusNode _focusNodeConnections = FocusNode();
@@ -150,10 +149,8 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
   String _startDurationNotify = "0 B/s";
   bool _working = false;
   FlutterVpnServiceState _state = FlutterVpnServiceState.disconnected;
-  bool _isSystemProxySet = false;
 
   Timer? _timerStateChecker;
-  Timer? _timerSystemProxyChecker;
   Timer? _timerCurrentUrltest;
   CurrentServerForUrltest _currentServerForUrltest = CurrentServerForUrltest();
 
@@ -380,38 +377,9 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     _timerStateChecker = null;
   }
 
-  void _startSystemProxyCheckTimer() {
-    if (!Platform.isWindows) {
-      return;
-    }
-    const Duration duration = Duration(seconds: 1);
-    _timerSystemProxyChecker ??= Timer.periodic(duration, (timer) async {
-      if (AppLifecycleStateNofity.isPaused()) {
-        return;
-      }
-
-      await _checkSystemProxy();
-    });
-  }
-
-  void _stopSystemProxyCheckTimer() {
-    _timerSystemProxyChecker?.cancel();
-    _timerSystemProxyChecker = null;
-  }
-
   Future<void> _checkState() async {
     var state = await VPNService.getState();
     await _onStateChanged(state, {});
-  }
-
-  Future<void> _checkSystemProxy() async {
-    if (VPNService.getSupportSystemProxy()) {
-      bool systemProxyset = await VPNService.getSystemProxy();
-      if (systemProxyset != _isSystemProxySet) {
-        _isSystemProxySet = systemProxyset;
-        setState(() {});
-      }
-    }
   }
 
   void _connectToCurrent() async {
@@ -808,7 +776,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     //print("_onStateChanged $_state->$state");
     _state = state;
     if (state == FlutterVpnServiceState.disconnected) {
-      _checkSystemProxy();
       _disconnectToCurrent();
       _disconnectToService();
       Biz.vpnStateChanged(false);
@@ -817,7 +784,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     } else if (state == FlutterVpnServiceState.connecting) {
     } else if (state == FlutterVpnServiceState.connected) {
       if (!AppLifecycleStateNofity.isPaused()) {
-        _checkSystemProxy();
         _connectToCurrent();
         _connectToService();
         _updateWanIP();
@@ -1047,9 +1013,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     _checkState();
 
     _startStateCheckTimer();
-    _startSystemProxyCheckTimer();
 
-    _checkSystemProxy();
     _connectToCurrent();
     _connectToService();
     _updateWanIP();
@@ -1062,7 +1026,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
 
   Future<void> _onStatePaused() async {
     _stopStateCheckTimer();
-    _stopSystemProxyCheckTimer();
     _disconnectToCurrent();
     _disconnectToService();
   }
@@ -1871,7 +1834,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     _focusNodeSwitch.dispose();
     _focusNodeSelect.dispose();
 
-    _focusNodeSystemProxy.dispose();
     _focusNodeRule.dispose();
     _focusNodeGlobal.dispose();
     _focusNodeConnections.dispose();
@@ -1889,7 +1851,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
 
     ErrorReporterUtils.register(null);
     _stopStateCheckTimer();
-    _stopSystemProxyCheckTimer();
 
     _disconnectToService();
     _disconnectToCurrent();
@@ -2173,62 +2134,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
                           ),*/
                         Column(
                           children: [
-                            VPNService.getSupportSystemProxy()
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        tcontext.meta.systemProxy,
-                                        style: const TextStyle(
-                                          fontSize:
-                                              ThemeConfig.kFontSizeListItem,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Switch.adaptive(
-                                        focusNode: _focusNodeSystemProxy,
-                                        value: _isSystemProxySet,
-                                        activeThumbColor:
-                                            ThemeDefine.kColorGreenBright,
-                                        onChanged: noConfig ||
-                                                _working ||
-                                                _state ==
-                                                    FlutterVpnServiceState
-                                                        .connecting ||
-                                                _state ==
-                                                    FlutterVpnServiceState
-                                                        .disconnecting ||
-                                                _state ==
-                                                    FlutterVpnServiceState
-                                                        .reasserting
-                                            ? null
-                                            : (bool newValue) async {
-                                                final previous =
-                                                    _isSystemProxySet;
-                                                setState(() {
-                                                  _isSystemProxySet = newValue;
-                                                });
-                                                try {
-                                                  await VPNService
-                                                      .setSystemProxy(newValue);
-                                                  await _checkSystemProxy();
-                                                } catch (_) {
-                                                  if (mounted) {
-                                                    setState(() {
-                                                      _isSystemProxySet =
-                                                          previous;
-                                                    });
-                                                  }
-                                                }
-                                              },
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(),
-                            const SizedBox(
-                              height: 10,
-                            ),
                             SizedBox(
                               child: SegmentedButtonEx<bool>(
                                 selectedIcon: Icon(Icons.check,
@@ -2319,9 +2224,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
       node1.add(_focusNodeTheme);
       nodes.add(node1);
       nodes.add([_focusNodeSwitch]);
-      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-        nodes.add([_focusNodeSystemProxy]);
-      }
       nodes.add([_focusNodeRule, _focusNodeGlobal]);
       nodes.add([_focusNodeConnections]);
       nodes.add([_focusNodeSelect]);

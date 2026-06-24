@@ -154,6 +154,7 @@ class FlutterVpnService {
   static Process? _desktopProcess;
   static FlutterVpnServiceState _desktopState =
       FlutterVpnServiceState.disconnected;
+  static const int _desktopOutputTailLimit = 4000;
 
   static void _ensureMethodHandler() {
     if (_methodHandlerReady) {
@@ -457,23 +458,31 @@ class FlutterVpnService {
     }
 
     await _desktopStop();
+    await _desktopKillResidualProcess();
     _desktopState = FlutterVpnServiceState.connecting;
     _notifyState(_desktopState);
 
+    final stdoutTail = StringBuffer();
+    final stderrTail = StringBuffer();
     try {
       final workDir = config.base_dir.isNotEmpty
           ? config.base_dir
           : File(servicePath).parent.path;
-      _desktopProcess = await Process.start(
+      final process = await Process.start(
         servicePath,
         ['run', '-c', coreConfigPath],
         workingDirectory: workDir,
         mode: ProcessStartMode.normal,
       );
-      _desktopProcess!.stdout.transform(utf8.decoder).listen((_) {});
-      _desktopProcess!.stderr.transform(utf8.decoder).listen((_) {});
-      _desktopProcess!.exitCode.then((exitCode) {
-        if (_desktopProcess != null) {
+      _desktopProcess = process;
+      process.stdout.transform(const Utf8Decoder(allowMalformed: true)).listen(
+            (chunk) => _appendDesktopOutput(stdoutTail, chunk),
+          );
+      process.stderr.transform(const Utf8Decoder(allowMalformed: true)).listen(
+            (chunk) => _appendDesktopOutput(stderrTail, chunk),
+          );
+      process.exitCode.then((exitCode) {
+        if (identical(_desktopProcess, process)) {
           _desktopProcess = null;
           _desktopState = FlutterVpnServiceState.disconnected;
           _notifyState(_desktopState, {'exitCode': exitCode.toString()});
@@ -496,27 +505,26 @@ class FlutterVpnService {
       if (_desktopProcess == null) {
         _desktopState = FlutterVpnServiceState.disconnected;
         _notifyState(_desktopState);
-        return VpnServiceWaitResult.error('service exited before ready');
+        return VpnServiceWaitResult.error(
+          'service exited before ready${_desktopOutputMessage(stdoutTail, stderrTail)}',
+        );
       }
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
 
-    _desktopState = FlutterVpnServiceState.disconnected;
-    _notifyState(_desktopState);
+    final outputMessage = _desktopOutputMessage(stdoutTail, stderrTail);
+    await _desktopStop();
     return VpnServiceWaitResult(
       VpnServiceWaitType.timeout,
-      err: VpnServiceResultError('service start timeout'),
+      err: VpnServiceResultError('service start timeout$outputMessage'),
     );
   }
 
   static Future<void> _desktopStop() async {
-    final apiReachable = await _desktopApiReachable();
     final process = _desktopProcess;
     _desktopProcess = null;
     if (process == null) {
-      if (apiReachable) {
-        await _desktopKillResidualProcess();
-      }
+      await _desktopKillResidualProcess();
       _desktopState = FlutterVpnServiceState.disconnected;
       _notifyState(_desktopState);
       return;
@@ -540,6 +548,38 @@ class FlutterVpnService {
     }
     _desktopState = FlutterVpnServiceState.disconnected;
     _notifyState(_desktopState);
+  }
+
+  static void _appendDesktopOutput(StringBuffer buffer, String value) {
+    if (value.isEmpty) {
+      return;
+    }
+    buffer.write(value);
+    if (buffer.length <= _desktopOutputTailLimit) {
+      return;
+    }
+    final text = buffer.toString();
+    buffer.clear();
+    buffer.write(text.substring(text.length - _desktopOutputTailLimit));
+  }
+
+  static String _desktopOutputMessage(
+    StringBuffer stdoutTail,
+    StringBuffer stderrTail,
+  ) {
+    final stderr = stderrTail.toString().trim();
+    final stdout = stdoutTail.toString().trim();
+    final parts = <String>[];
+    if (stderr.isNotEmpty) {
+      parts.add('stderr: $stderr');
+    }
+    if (stdout.isNotEmpty) {
+      parts.add('stdout: $stdout');
+    }
+    if (parts.isEmpty) {
+      return '';
+    }
+    return ': ${parts.join(' | ')}';
   }
 
   static Future<void> _desktopKillResidualProcess() async {

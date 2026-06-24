@@ -29,7 +29,6 @@ import 'package:tuple/tuple.dart';
 import 'package:vpn_service/proxy_manager.dart';
 import 'package:vpn_service/state.dart';
 import 'package:vpn_service/vpn_service.dart';
-import 'package:vpn_service/vpn_service_platform_interface.dart';
 
 class VPNServiceSetServerOptions {
   String disabledServerError = "";
@@ -280,7 +279,7 @@ class VPNService {
 
     if (Platform.isWindows) {
       if (setting.proxy.host == SettingConfigItemProxy.hostNetwork) {
-        FlutterVpnService.firewallAddPorts([
+        await FlutterVpnService.firewallAddPorts([
           setting.proxy.mixedDirectPort,
           setting.proxy.mixedForwordPort,
           setting.proxy.mixedRulePort
@@ -293,15 +292,16 @@ class VPNService {
 
     VpnServiceWaitResult result = await FlutterVpnService.restart(timeout);
     if (result.type == VpnServiceWaitType.timeout) {
-      ReturnResult<String> result = await ClashApi.mainStack(
+      String message = result.err?.message ?? "service restart timeout";
+      ReturnResult<String> stackResult = await ClashApi.mainStack(
         SettingManager.getConfig().proxy.controlPort,
       );
       String extra = "";
-      if (result.data != null) {
-        extra = result.data!;
+      if (stackResult.data != null) {
+        extra = stackResult.data!;
       }
       await stop();
-      return ReturnResultError("service restart timeout:$extra");
+      return ReturnResultError(_appendStartErrorExtra(message, extra));
     }
     if (result.type != VpnServiceWaitType.done) {
       Log.w(
@@ -342,7 +342,7 @@ class VPNService {
     var setting = SettingManager.getConfig();
     if (Platform.isWindows) {
       if (setting.proxy.host == SettingConfigItemProxy.hostNetwork) {
-        FlutterVpnService.firewallAddPorts([
+        await FlutterVpnService.firewallAddPorts([
           setting.proxy.mixedDirectPort,
           setting.proxy.mixedForwordPort,
           setting.proxy.mixedRulePort
@@ -351,6 +351,7 @@ class VPNService {
     }
     VpnServiceWaitResult result = await FlutterVpnService.start(timeout);
     if (result.type == VpnServiceWaitType.timeout) {
+      String message = result.err?.message ?? "service start timeout";
       ReturnResult<String> result1 = await ClashApi.mainStack(
         SettingManager.getConfig().proxy.controlPort,
       );
@@ -360,7 +361,7 @@ class VPNService {
       }
 
       await stop();
-      return ReturnResultError("service start timeout:$extra");
+      return ReturnResultError(_appendStartErrorExtra(message, extra));
     }
 
     if (result.err != null) {
@@ -408,6 +409,13 @@ class VPNService {
     if (Platform.isWindows) {
       await uninstall();
     }
+  }
+
+  static String _appendStartErrorExtra(String message, String extra) {
+    if (extra.isEmpty) {
+      return message;
+    }
+    return "$message:$extra";
   }
 
   static bool getSupportSystemProxy() {
@@ -1002,22 +1010,32 @@ class VPNService {
           }
         } catch (err) {}
       }
-      if (Platform.isIOS ||
-          Platform.isMacOS ||
-          Platform.isAndroid ||
-          Platform.isLinux) {
-        var fileLog =
-            File(serviceLogFilePath); //日志文件必须先创建,否则ios及macos下sb会包chown错误
-        if (!await fileLog.exists()) {
-          await fileLog.create();
-        }
-        var fileCache = File(cacheDBFilePath); //文件必须先创建,否则ios及macos下sb会包chown错误
-        if (!await fileCache.exists()) {
-          await fileCache.create();
-        }
+      ReturnResultError? prepareError = await _prepareServiceRuntimeFiles(
+          serviceLogFilePath, cacheDBFilePath);
+      if (prepareError != null) {
+        return prepareError;
       }
     }
 
+    return null;
+  }
+
+  static Future<ReturnResultError?> _prepareServiceRuntimeFiles(
+    String serviceLogFilePath,
+    String cacheDBFilePath,
+  ) async {
+    try {
+      var fileLog = File(serviceLogFilePath);
+      if (!await fileLog.exists()) {
+        await fileLog.create(recursive: true);
+      }
+      var fileCache = File(cacheDBFilePath);
+      if (!await fileCache.exists()) {
+        await fileCache.create(recursive: true);
+      }
+    } catch (err) {
+      return ReturnResultError(err.toString());
+    }
     return null;
   }
 
