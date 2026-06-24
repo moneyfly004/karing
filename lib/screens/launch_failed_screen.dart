@@ -3,8 +3,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:karing/app/modules/biz.dart';
-import 'package:karing/app/modules/remote_config_manager.dart';
 import 'package:karing/app/utils/analytics_utils.dart';
+import 'package:karing/app/utils/app_utils.dart';
 import 'package:karing/i18n/strings.g.dart';
 import 'package:karing/screens/theme_config.dart';
 import 'package:karing/screens/webview_helper.dart';
@@ -88,7 +88,6 @@ class _LaunchFailedScreenState extends LasyRenderingState<LaunchFailedScreen> {
   @override
   Widget build(BuildContext context) {
     final tcontext = Translations.of(context);
-    String host = RemoteConfigManager.getConfig().host;
     String error = "";
     if (widget.startFailedReason == StartFailedReason.invalidProcess) {
       error = tcontext.LaunchFailedScreen.invalidProcess;
@@ -134,8 +133,8 @@ class _LaunchFailedScreenState extends LasyRenderingState<LaunchFailedScreen> {
                                 analyticsEventType: analyticsEventTypeUA,
                                 name: 'LFS_website',
                                 repeatable: true);
-                            await WebviewHelper.loadUrl(
-                                context, "https://$host", "LFS_website");
+                            await WebviewHelper.loadUrl(context,
+                                AppUtils.officialWebsiteUrl, "LFS_website");
                           },
                         )),
                     const SizedBox(

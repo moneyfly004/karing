@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:package_info_plus/package_info_plus.dart';
 
 abstract final class AppUtils {
+  static const String officialWebsiteUrl = "https://new.moneyfly.top";
+
   static Future<String> getPackgetVersion() async {
     try {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
