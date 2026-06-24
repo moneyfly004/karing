@@ -39,6 +39,22 @@ jobs:
             "build-tools;36.0.0" \
             "ndk;28.2.13676358"
 
+      - name: Create CI private config fallback
+        run: |
+          mkdir -p lib/app/private
+          cat > lib/app/private/ads_private.dart <<'DART'
+          enum AdType {
+            googleBannerAd,
+            googleRewardedAd,
+          }
+
+          class AdsPrivate {
+            static bool getEnable() => false;
+
+            static String getAdID(AdType type, {String name = ''}) => '';
+          }
+          DART
+
       - name: Install dependencies
         run: flutter pub get
 
