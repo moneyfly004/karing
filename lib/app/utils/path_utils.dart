@@ -301,6 +301,8 @@ class PathUtils {
       return "karingService";
     } else if (Platform.isWindows) {
       return "karingService.exe";
+    } else if (Platform.isMacOS) {
+      return "karingService";
     }
     return "";
   }
@@ -311,6 +313,9 @@ class PathUtils {
       filePath = exeDir();
       filePath = path.join(filePath, serviceExeName());
     } else if (Platform.isWindows) {
+      filePath = exeDir();
+      filePath = path.join(filePath, serviceExeName());
+    } else if (Platform.isMacOS) {
       filePath = exeDir();
       filePath = path.join(filePath, serviceExeName());
     }

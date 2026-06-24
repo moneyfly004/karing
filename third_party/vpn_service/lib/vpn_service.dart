@@ -426,7 +426,7 @@ class FlutterVpnService {
   }
 
   static bool get _supportsDesktopProcessFallback =>
-      Platform.isWindows || Platform.isLinux;
+      Platform.isWindows || Platform.isLinux || Platform.isMacOS;
 
   static bool get _supportsSystemProxyFallback =>
       Platform.isWindows || Platform.isLinux || Platform.isMacOS;
