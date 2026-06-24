@@ -80,7 +80,7 @@ jobs:
           flutter build apk --release
           mkdir -p ci-artifacts/android
           cp build/app/outputs/flutter-apk/app-release.apk ci-artifacts/android/app-release.apk
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
 
       - name: Collect Android release assets
         run: |
@@ -191,7 +191,7 @@ jobs:
 
   macos:
     name: macOS DMG
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 90
 
     steps:
@@ -298,6 +298,30 @@ jobs:
       - name: Enable macOS desktop
         run: flutter config --enable-macos-desktop
 
+      - name: Prepare unsigned macOS CI project
+        run: |
+          ruby <<'RUBY'
+          project = 'macos/Runner.xcodeproj/project.pbxproj'
+          text = File.read(project)
+
+          text.gsub!(/^\t\t\t\tCEEC19F72B142FA90076CA70 \/\* LibVpnCore \*\/,\n/, '')
+          text.gsub!(/\t\t\t\t\tCEEC19F72B142FA90076CA70 = \{\n\t\t\t\t\t\tCreatedOnToolsVersion = 15\.0\.1;\n\t\t\t\t\t\tLastSwiftMigration = 1500;\n\t\t\t\t\t\};\n/, '')
+          text.gsub!(/\t\tCE35BDB52E31DEBF00E92FA7 \/\* PBXContainerItemProxy \*\/ = \{\n(?:\t\t\t.*\n)*?\t\t\};\n/, '')
+          text.gsub!(/\t\tCE35BDB62E31DEBF00E92FA7 \/\* PBXTargetDependency \*\/ = \{\n(?:\t\t\t.*\n)*?\t\t\};\n/, '')
+          text.gsub!(/^\t\t\t\t"DEVELOPMENT_TEAM\[sdk=macosx\*\]" = TNPM9PFX3W;\n/, '')
+          text.gsub!(/^\t\t\t\tDEVELOPMENT_TEAM = TNPM9PFX3W;\n/, "\t\t\t\tDEVELOPMENT_TEAM = \"\";\n")
+          text.gsub!(/^\t\t\t\t"PROVISIONING_PROFILE_SPECIFIER\[sdk=macosx\*\]" = "[^"]*";\n/, '')
+          text.gsub!(/^\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "[^"]*";\n/, "\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"\";\n")
+          text.gsub!(/^\t\t\t\t"CODE_SIGN_IDENTITY\[sdk=macosx\*\]" = "[^"]*";\n/, '')
+          text.gsub!(/^\t\t\t\tCODE_SIGN_IDENTITY = "[^"]*";\n/, "\t\t\t\tCODE_SIGN_IDENTITY = \"-\";\n")
+          text.gsub!(/^\t\t\t\tCODE_SIGN_STYLE = Automatic;\n/, "\t\t\t\tCODE_SIGN_STYLE = Manual;\n")
+          text.gsub!(/^\t\t\t\tCODE_SIGNING_ALLOWED = YES;\n/, "\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n")
+          text.gsub!(/^\t\t\t\tCODE_SIGNING_REQUIRED = YES;\n/, "\t\t\t\tCODE_SIGNING_REQUIRED = NO;\n")
+
+          File.write(project, text)
+          RUBY
+          ! grep -nE 'TNPM9PFX3W|macos-dev-karing|Developer ID Application|Apple Development' macos/Runner.xcodeproj/project.pbxproj
+
       - name: Install macOS pods
         run: |
           cd macos
@@ -313,6 +337,9 @@ jobs:
         env:
           CODE_SIGNING_ALLOWED: "NO"
           CODE_SIGNING_REQUIRED: "NO"
+          CODE_SIGN_IDENTITY: "-"
+          DEVELOPMENT_TEAM: ""
+          PROVISIONING_PROFILE_SPECIFIER: ""
         run: flutter_distributor package --platform macos --targets dmg --skip-clean
 
       - name: Collect macOS release asset
@@ -372,6 +399,7 @@ jobs:
             libgtk-3-dev \
             libkeybinder-3.0-dev \
             libsecret-1-dev \
+            mlocate \
             ninja-build \
             rpm \
             unzip \
@@ -418,12 +446,31 @@ jobs:
         run: |
           dart pub global activate flutter_distributor
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+          curl -L -o /tmp/appimagetool.AppImage \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool.AppImage
+          /tmp/appimagetool.AppImage --appimage-extract
+          sudo mv squashfs-root /opt/appimagetool
+          sudo tee /usr/local/bin/appimagetool >/dev/null <<'SH'
+          #!/usr/bin/env bash
+          exec /opt/appimagetool/AppRun "$@"
+          SH
+          sudo chmod +x /usr/local/bin/appimagetool
+          appimagetool --version
+          sudo updatedb || true
 
       - name: Package Linux formats
         env:
           CMAKE_PREFIX_PATH: /usr
           CURL_ROOT: /usr
-        run: flutter_distributor package --platform linux --targets deb,rpm,appimage
+        run: |
+          set -e
+          flutter_distributor package --platform linux --targets deb,rpm,appimage || {
+            status=$?
+            echo "Linux packaging failed with exit code ${status}"
+            find dist -maxdepth 6 -type f -o -type d | sort || true
+            exit "${status}"
+          }
 
       - name: Collect Linux release assets
         run: |
