@@ -318,6 +318,29 @@ jobs:
           text.gsub!(/^\t\t\t\tCODE_SIGNING_ALLOWED = YES;\n/, "\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n")
           text.gsub!(/^\t\t\t\tCODE_SIGNING_REQUIRED = YES;\n/, "\t\t\t\tCODE_SIGNING_REQUIRED = NO;\n")
 
+          extension_configs = %w[
+            CE35BDAE2E31DE9000E92FA7
+            CE35BDAF2E31DE9000E92FA7
+            CE35BDB02E31DE9000E92FA7
+          ]
+          extension_configs.each do |config_id|
+            text.sub!(/(\t\t#{config_id} \/\* .*? \*\/ = \{\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = \{\n)/m) do
+              prefix = Regexp.last_match(1)
+              next Regexp.last_match(0) if Regexp.last_match(0).include?('FRAMEWORK_SEARCH_PATHS')
+
+              prefix + <<~SETTINGS.gsub(/^/, "\t\t\t\t")
+                FRAMEWORK_SEARCH_PATHS = (
+                  "$(inherited)",
+                  "$(PROJECT_DIR)/../bind/apple",
+                );
+                SWIFT_INCLUDE_PATHS = (
+                  "$(inherited)",
+                  "$(PROJECT_DIR)/../bind/apple",
+                );
+              SETTINGS
+            end
+          end
+
           File.write(project, text)
           RUBY
           ! grep -nE 'TNPM9PFX3W|macos-dev-karing|Developer ID Application|Apple Development' macos/Runner.xcodeproj/project.pbxproj
@@ -399,7 +422,7 @@ jobs:
             libgtk-3-dev \
             libkeybinder-3.0-dev \
             libsecret-1-dev \
-            mlocate \
+            plocate \
             ninja-build \
             rpm \
             unzip \
