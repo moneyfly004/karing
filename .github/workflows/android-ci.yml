@@ -14,16 +14,26 @@ env:
   ANDROID_PLATFORM: "android-35"
   ANDROID_BUILD_TOOLS: "36.0.0"
   ANDROID_NDK: "28.2.13676358"
+  UPSTREAM_RELEASE: "v1.2.20.2308"
+  UPSTREAM_RELEASE_BASE: "https://github.com/KaringX/karing/releases/download/v1.2.20.2308"
 
 jobs:
   android:
-    name: Android APK
+    name: Android APKs
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set release names
+        run: |
+          VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
+          VERSION="${VERSION_RAW/+/.}"
+          echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -65,25 +75,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release APKs
+        run: |
+          flutter build apk --release
+          mkdir -p ci-artifacts/android
+          cp build/app/outputs/flutter-apk/app-release.apk ci-artifacts/android/app-release.apk
+          flutter build apk --release --split-per-abi
 
-      - name: Collect Android artifacts
+      - name: Collect Android release assets
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/*.apk dist/
+          cp ci-artifacts/android/app-release.apk "dist/${ASSET_PREFIX}_android_arm.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/${ASSET_PREFIX}_android_arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "dist/${ASSET_PREFIX}_android_armeabi-v7a.apk"
+          ls -lh dist
 
-      - name: Upload Android artifact
+      - name: Upload Android release assets
         uses: actions/upload-artifact@v4
         with:
-          name: karing-android
-          path: dist/*.apk
+          name: release-assets-android
+          path: dist/*
           if-no-files-found: error
 
   windows:
-    name: Windows ZIP
+    name: Windows installer and ZIP
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     defaults:
       run:
@@ -92,6 +109,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set release names
+        run: |
+          $versionRaw = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(\S+)' | Select-Object -First 1).Matches.Groups[1].Value
+          $version = $versionRaw.Replace('+', '.')
+          "VERSION_RAW=$versionRaw" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "ASSET_PREFIX=karing_$version" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -116,8 +141,17 @@ jobs:
           }
           '@ | Set-Content -Encoding utf8 lib/app/private/ads_private.dart
 
-      - name: Create optional native core directory
-        run: New-Item -ItemType Directory -Force bind/windows/core | Out-Null
+      - name: Restore Windows runtime core from upstream release
+        run: |
+          New-Item -ItemType Directory -Force bind/windows/core | Out-Null
+          Invoke-WebRequest `
+            -Uri "${{ env.UPSTREAM_RELEASE_BASE }}/karing_1.2.20.2308_windows_x64.zip" `
+            -OutFile upstream-windows.zip
+          Expand-Archive -Path upstream-windows.zip -DestinationPath upstream-windows -Force
+          Copy-Item upstream-windows/karingService.exe bind/windows/core/ -Force
+          Copy-Item upstream-windows/libcronet.dll bind/windows/core/ -Force
+          Copy-Item upstream-windows/sqlite3.dll bind/windows/core/ -Force
+          Copy-Item upstream-windows/sqlite3_connection_pool.dll bind/windows/core/ -Force
 
       - name: Install dependencies
         run: flutter pub get
@@ -125,29 +159,52 @@ jobs:
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Build Windows app
-        run: flutter build windows --release
+      - name: Install packaging tools
+        run: |
+          dart pub global activate flutter_distributor
+          "PATH=$env:PATH;$env:USERPROFILE\AppData\Local\Pub\Cache\bin" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Package Windows app
+      - name: Package Windows installer and ZIP
+        run: flutter_distributor package --platform windows --targets exe,zip
+
+      - name: Collect Windows release assets
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath dist/karing-windows-x64.zip -Force
+          $exe = Get-ChildItem -Path dist -Filter *.exe -Recurse | Select-Object -First 1
+          $zip = Get-ChildItem -Path dist -Filter *.zip -Recurse | Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "Windows .exe installer was not generated"
+          }
+          if (-not $zip) {
+            Write-Error "Windows .zip package was not generated"
+          }
+          Move-Item -Path $exe.FullName -Destination "dist/$env:ASSET_PREFIX`_windows_x64.exe" -Force
+          Move-Item -Path $zip.FullName -Destination "dist/$env:ASSET_PREFIX`_windows_x64.zip" -Force
+          Get-ChildItem -Path dist
 
-      - name: Upload Windows artifact
+      - name: Upload Windows release assets
         uses: actions/upload-artifact@v4
         with:
-          name: karing-windows
-          path: dist/karing-windows-x64.zip
+          name: release-assets-windows
+          path: dist/*
           if-no-files-found: error
 
   macos:
-    name: macOS ZIP
+    name: macOS DMG
     runs-on: macos-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set release names
+        run: |
+          VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
+          VERSION="${VERSION_RAW/+/.}"
+          echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -172,34 +229,213 @@ jobs:
           }
           DART
 
+      - name: Remove stale CocoaPods lockfile
+        run: rm -f macos/Podfile.lock
+
+      - name: Restore macOS VPN core from upstream release
+        run: |
+          mkdir -p bind/apple
+          curl -L -o upstream-macos.dmg "${{ env.UPSTREAM_RELEASE_BASE }}/karing_1.2.20.2308_macos_universal.dmg"
+          MOUNT_DIR="$(mktemp -d)"
+          hdiutil attach upstream-macos.dmg -nobrowse -readonly -mountpoint "$MOUNT_DIR"
+          cleanup() {
+            hdiutil detach "$MOUNT_DIR" -quiet || true
+            rm -rf "$MOUNT_DIR"
+          }
+          trap cleanup EXIT
+
+          APP_PATH="$(find "$MOUNT_DIR" -name 'Karing.app' -type d -print | head -n 1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "Unable to find Karing.app in upstream DMG"
+            find "$MOUNT_DIR" -print | head -n 200
+            exit 1
+          fi
+
+          CORE_FRAMEWORK="$APP_PATH/Contents/Library/SystemExtensions/com.nebula.karing.karingServiceSE.systemextension/Contents/Frameworks/LibVpnCore.framework"
+          if [ ! -d "$CORE_FRAMEWORK" ]; then
+            echo "Unable to find LibVpnCore.framework in upstream Karing.app"
+            find "$APP_PATH/Contents/Library/SystemExtensions" -print | head -n 200
+            exit 1
+          fi
+
+          ditto "$CORE_FRAMEWORK" bind/apple/LibVpnCore.framework
+
+          for dylib in libswiftCore.dylib libswift_Concurrency.dylib; do
+            DYLIB_PATH="$APP_PATH/Contents/Library/SystemExtensions/com.nebula.karing.karingServiceSE.systemextension/Contents/Frameworks/$dylib"
+            if [ -f "$DYLIB_PATH" ]; then
+              ditto "$DYLIB_PATH" "bind/apple/$dylib"
+            fi
+          done
+
+          MODULE_DIR="bind/apple/LibVpnCore.framework/Modules/LibVpnCore.swiftmodule"
+          mkdir -p "$MODULE_DIR"
+          for arch in x86_64 arm64 arm64e; do
+            cat > "$MODULE_DIR/${arch}-apple-macos.swiftinterface" <<EOF
+          // swift-interface-format-version: 1.0
+          // swift-module-flags: -target ${arch}-apple-macos12.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -module-name LibVpnCore
+          public import Foundation
+          public import NetworkExtension
+          public import Swift
+          public import _Concurrency
+          public import _StringProcessing
+          public import _SwiftConcurrencyShims
+          @objc(_TtC10LibVpnCore17ExtensionProvider) @_inheritsConvenienceInitializers open class ExtensionProvider : NetworkExtension.NEPacketTunnelProvider {
+            @objc override dynamic public init()
+            override public func startTunnel(options: [Swift.String : ObjectiveC.NSObject]?) async throws
+            override public func stopTunnel(with reason: NetworkExtension.NEProviderStopReason, completionHandler: @escaping () -> Swift.Void)
+            override public func handleAppMessage(_ messageData: Foundation.Data) async -> Foundation.Data?
+          }
+          EOF
+          done
+
+          file bind/apple/LibVpnCore.framework/Versions/A/LibVpnCore
+          find "$MODULE_DIR" -type f -print
+          ls -lh bind/apple
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Enable macOS desktop
         run: flutter config --enable-macos-desktop
 
-      - name: Build macOS app
+      - name: Install packaging tools
+        run: |
+          dart pub global activate flutter_distributor
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+          npm install -g appdmg
+
+      - name: Package macOS DMG
         env:
           CODE_SIGNING_ALLOWED: "NO"
           CODE_SIGNING_REQUIRED: "NO"
-        run: flutter build macos --release
+        run: flutter_distributor package --platform macos --targets dmg --skip-clean
 
-      - name: Package macOS app
+      - name: Collect macOS release asset
         run: |
-          mkdir -p dist
-          APP_PATH="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' -type d | head -n 1)"
-          if [ -z "$APP_PATH" ]; then
-            echo "No macOS .app bundle found"
-            find build/macos/Build/Products -maxdepth 3 -print
+          mkdir -p release-dist
+          DMG_PATH="$(find dist -type f -name '*.dmg' | head -n 1)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "macOS .dmg package was not generated"
+            find dist -print || true
             exit 1
           fi
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" dist/karing-macos.zip
+          mv "$DMG_PATH" "release-dist/${ASSET_PREFIX}_macos_universal.dmg"
+          ls -lh release-dist
 
-      - name: Upload macOS artifact
+      - name: Upload macOS release asset
         uses: actions/upload-artifact@v4
         with:
-          name: karing-macos
-          path: dist/karing-macos.zip
+          name: release-assets-macos
+          path: release-dist/*
+          if-no-files-found: error
+
+  linux:
+    name: Linux AppImage, DEB and RPM
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set release names
+        run: |
+          VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
+          VERSION="${VERSION_RAW/+/.}"
+          echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "${{ env.FLUTTER_VERSION }}"
+          channel: stable
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            cmake \
+            curl \
+            libayatana-appindicator3-dev \
+            libfuse2 \
+            libgtk-3-dev \
+            libkeybinder-3.0-dev \
+            libsecret-1-dev \
+            ninja-build \
+            rpm \
+            unzip \
+            zstd
+
+      - name: Create CI private config fallback
+        run: |
+          mkdir -p lib/app/private
+          cat > lib/app/private/ads_private.dart <<'DART'
+          enum AdType {
+            googleBannerAd,
+            googleRewardedAd,
+          }
+
+          class AdsPrivate {
+            static bool getEnable() => false;
+
+            static String getAdID(AdType type, {String name = ''}) => '';
+          }
+          DART
+
+      - name: Restore Linux service from upstream release
+        run: |
+          mkdir -p bind/linux/core
+          curl -L -o upstream-linux.deb "${{ env.UPSTREAM_RELEASE_BASE }}/karing_1.2.20.2308_linux_amd64.deb"
+          ar x upstream-linux.deb
+          tar --use-compress-program=unzstd -xf data.tar.zst
+          SERVICE_PATH="$(find . -type f -name karingService | head -n 1)"
+          if [ -z "$SERVICE_PATH" ]; then
+            echo "Unable to recover karingService from upstream Linux package"
+            find . -maxdepth 5 -type f | sort | head -n 200
+            exit 1
+          fi
+          cp "$SERVICE_PATH" bind/linux/core/karingService
+          chmod +x bind/linux/core/karingService
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Install packaging tools
+        run: |
+          dart pub global activate flutter_distributor
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Package Linux formats
+        run: flutter_distributor package --platform linux --targets deb,rpm,appimage
+
+      - name: Collect Linux release assets
+        run: |
+          mkdir -p release-dist
+          DEB_PATH="$(find dist -type f -name '*.deb' | head -n 1)"
+          RPM_PATH="$(find dist -type f -name '*.rpm' | head -n 1)"
+          APPIMAGE_PATH="$(find dist -type f -name '*.AppImage' | head -n 1)"
+          if [ -z "$DEB_PATH" ] || [ -z "$RPM_PATH" ] || [ -z "$APPIMAGE_PATH" ]; then
+            echo "Linux packages were not fully generated"
+            find dist -maxdepth 5 -print || true
+            exit 1
+          fi
+          mv "$DEB_PATH" "release-dist/${ASSET_PREFIX}_linux_amd64.deb"
+          mv "$RPM_PATH" "release-dist/${ASSET_PREFIX}_linux_amd64.rpm"
+          mv "$APPIMAGE_PATH" "release-dist/${ASSET_PREFIX}_linux_amd64.AppImage"
+          ls -lh release-dist
+
+      - name: Upload Linux release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-linux
+          path: release-dist/*
           if-no-files-found: error
 
   release:
@@ -210,28 +446,66 @@ jobs:
       - android
       - windows
       - macos
+      - linux
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Set release names
+        run: |
+          VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
+          VERSION="${VERSION_RAW/+/.}"
+          echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v${VERSION}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
+
+      - name: Download release assets
         uses: actions/download-artifact@v4
         with:
+          pattern: release-assets-*
+          merge-multiple: true
           path: release-assets
+
+      - name: Validate release asset set
+        run: |
+          set -euo pipefail
+          expected=(
+            "${ASSET_PREFIX}_android_arm.apk"
+            "${ASSET_PREFIX}_android_arm64-v8a.apk"
+            "${ASSET_PREFIX}_android_armeabi-v7a.apk"
+            "${ASSET_PREFIX}_windows_x64.exe"
+            "${ASSET_PREFIX}_windows_x64.zip"
+            "${ASSET_PREFIX}_macos_universal.dmg"
+            "${ASSET_PREFIX}_linux_amd64.AppImage"
+            "${ASSET_PREFIX}_linux_amd64.deb"
+            "${ASSET_PREFIX}_linux_amd64.rpm"
+          )
+          for file in "${expected[@]}"; do
+            test -f "release-assets/${file}" || {
+              echo "Missing release asset: ${file}"
+              find release-assets -type f | sort
+              exit 1
+            }
+          done
+          ls -lh release-assets
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
-          TAG="v${VERSION}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          TITLE="Karing ${VERSION} (run ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT})"
-
           {
             echo "Automated GitHub Actions release."
             echo
+            echo "Version: ${VERSION_RAW}"
             echo "Commit: ${GITHUB_SHA}"
+            echo
+            echo "Assets follow the upstream Karing release naming pattern:"
+            echo "- Android APKs: universal, arm64-v8a, armeabi-v7a"
+            echo "- Windows: installer EXE and ZIP"
+            echo "- macOS: universal DMG"
+            echo "- Linux: AppImage, DEB and RPM"
           } > release-notes.md
 
           mapfile -t ASSETS < <(find release-assets -type f | sort)
@@ -240,7 +514,7 @@ jobs:
             exit 1
           fi
 
-          gh release create "$TAG" "${ASSETS[@]}" \
-            --title "$TITLE" \
+          gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
+            --title "Karing ${VERSION_RAW} (run ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT})" \
             --notes-file release-notes.md \
             --target "$GITHUB_SHA"

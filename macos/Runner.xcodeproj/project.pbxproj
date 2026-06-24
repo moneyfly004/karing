@@ -29,8 +29,8 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		CE35BDA22E31DE9000E92FA7 /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CEBE65DB2A22EAE0004691A4 /* NetworkExtension.framework */; };
 		CE35BDAC2E31DE9000E92FA7 /* com.nebula.karing.karingServiceSE.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = CE35BDA12E31DE8F00E92FA7 /* com.nebula.karing.karingServiceSE.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CE35BDB32E31DEBF00E92FA7 /* LibVpnCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CEEC19F82B142FA90076CA70 /* LibVpnCore.framework */; };
-		CE35BDB42E31DEBF00E92FA7 /* LibVpnCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CEEC19F82B142FA90076CA70 /* LibVpnCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CE35BDB32E31DEBF00E92FA7 /* LibVpnCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CEFD00012F01ABCD00000001 /* LibVpnCore.framework */; };
+		CE35BDB42E31DEBF00E92FA7 /* LibVpnCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CEFD00012F01ABCD00000001 /* LibVpnCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CEFA00012F01ABCD00000001 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CEFA00002F01ABCD00000001 /* CoreText.framework */; };
 		CE3CC9042E5EEB9E00EA3770 /* libswiftCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE3CC9022E5EEB9E00EA3770 /* libswiftCore.dylib */; };
 		CE3CC9052E5EEB9E00EA3770 /* libswift_Concurrency.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = CE3CC9032E5EEB9E00EA3770 /* libswift_Concurrency.dylib */; };
@@ -156,6 +156,7 @@
 		CEBE65DE2A22EAE1004691A4 /* PacketTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketTunnelProvider.swift; sourceTree = "<group>"; };
 		CEBE65E02A22EAE1004691A4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CEEC19F82B142FA90076CA70 /* LibVpnCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LibVpnCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEFD00012F01ABCD00000001 /* LibVpnCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LibVpnCore.framework; path = ../bind/apple/LibVpnCore.framework; sourceTree = "<group>"; };
 		CEEC1A042B142FCC0076CA70 /* Libbox.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Libbox.xcframework; path = ../bind/apple/Libbox.xcframework; sourceTree = "<group>"; };
 		CEEC1A132B1430910076CA70 /* ExtensionPlatformInterface.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExtensionPlatformInterface.swift; sourceTree = "<group>"; };
 		CEEC1A142B1430910076CA70 /* LibVpnCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibVpnCore.swift; sourceTree = "<group>"; };
@@ -304,7 +305,7 @@
 		CE35BD9A2E31DE7900E92FA7 /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				CEEC19F82B142FA90076CA70 /* LibVpnCore.framework */,
+				CEFD00012F01ABCD00000001 /* LibVpnCore.framework */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -406,7 +407,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				CE35BDB62E31DEBF00E92FA7 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				CE35BDA32E31DE9000E92FA7 /* karingServiceSE */,

@@ -58,6 +58,8 @@ app.*.map.json
 /dist/karing_*
 /dist/*+*
 /bind/apple/Libbox.xcframework
+/bind/apple/LibVpnCore.framework
+/bind/apple/*.dylib
 /bind/android/core
 /bind/windows/core
 /bind/linux/core
