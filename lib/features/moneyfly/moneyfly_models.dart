@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class MoneyflyUser {
   MoneyflyUser({
     required this.id,
@@ -193,6 +195,9 @@ class MoneyflyPayment {
     required this.paymentUrl,
     this.qrCode = '',
     this.qrCodeUrl = '',
+    this.paymentHtml = '',
+    this.paymentMode = '',
+    this.payType = '',
     this.transactionId = '',
   });
 
@@ -200,11 +205,18 @@ class MoneyflyPayment {
   final String paymentUrl;
   final String qrCode;
   final String qrCodeUrl;
+  final String paymentHtml;
+  final String paymentMode;
+  final String payType;
   final String transactionId;
 
   bool get hasQrContent => qrCode.isNotEmpty || qrCodeUrl.isNotEmpty;
 
-  bool get hasPaymentContent => paymentUrl.isNotEmpty || hasQrContent;
+  bool get hasPaymentContent =>
+      paymentUrl.isNotEmpty || paymentHtml.isNotEmpty || hasQrContent;
+
+  bool get hasOpenablePayment =>
+      paymentUrl.isNotEmpty || paymentHtml.isNotEmpty;
 
   String get scannableContent {
     if (qrCode.isNotEmpty) {
@@ -216,6 +228,39 @@ class MoneyflyPayment {
     return paymentUrl;
   }
 
+  factory MoneyflyPayment.fromResponse(dynamic value) {
+    if (value is Map) {
+      return MoneyflyPayment.fromJson(value.cast<String, dynamic>());
+    }
+    if (value is List) {
+      for (final item in value) {
+        final payment = MoneyflyPayment.fromResponse(item);
+        if (payment.hasPaymentContent) {
+          return payment;
+        }
+      }
+      return MoneyflyPayment(orderNo: '', paymentUrl: '');
+    }
+    final text = (value ?? '').toString().trim();
+    if (text.isEmpty || text == 'null') {
+      return MoneyflyPayment(orderNo: '', paymentUrl: '');
+    }
+    final decoded = _tryDecodeJson(text);
+    if (decoded != null) {
+      return MoneyflyPayment.fromResponse(decoded);
+    }
+    if (_looksLikeHtml(text)) {
+      return MoneyflyPayment(orderNo: '', paymentUrl: '', paymentHtml: text);
+    }
+    if (_looksLikeAlipayPreCreateQr(text)) {
+      return MoneyflyPayment(orderNo: '', paymentUrl: '', qrCode: text);
+    }
+    if (_looksLikeUrl(text) || _looksLikePaymentScheme(text)) {
+      return MoneyflyPayment(orderNo: '', paymentUrl: text);
+    }
+    return MoneyflyPayment(orderNo: '', paymentUrl: '', qrCode: text);
+  }
+
   factory MoneyflyPayment.fromJson(Map<String, dynamic> json) {
     final maps = _nestedMaps(json, const [
       'data',
@@ -223,7 +268,52 @@ class MoneyflyPayment {
       'pay',
       'order',
       'result',
+      'alipay',
+      'codepay',
+      'params',
+      'payload',
     ]);
+    final payType = _firstStringInMaps(maps, const [
+      'pay_type',
+      'payType',
+      'payment_type',
+      'paymentType',
+    ]);
+    final paymentMode = _firstStringInMaps(maps, const [
+      'payment_mode',
+      'paymentMode',
+      'mode',
+    ]);
+    final rawPaymentUrl = _firstStringInMaps(maps, const [
+      'payment_url',
+      'paymentUrl',
+      'pay_url',
+      'payUrl',
+      'url',
+      'checkout_url',
+      'checkoutUrl',
+      'redirect_url',
+      'redirectUrl',
+      'gateway_url',
+      'gatewayUrl',
+      'cashier_url',
+      'cashierUrl',
+      'pay_link',
+      'payLink',
+      'payurl',
+      'link',
+      'jump_url',
+      'jumpUrl',
+      'redirect',
+      'deeplink',
+      'deep_link',
+      'scheme',
+    ]);
+    final classified = _classifyBackendPaymentValue(
+      rawPaymentUrl,
+      payType: payType,
+      paymentMode: paymentMode,
+    );
     return MoneyflyPayment(
       orderNo: _firstStringInMaps(maps, const [
         'order_no',
@@ -231,50 +321,203 @@ class MoneyflyPayment {
         'trade_no',
         'tradeNo',
       ]),
-      paymentUrl: _firstStringInMaps(maps, const [
-        'payment_url',
-        'paymentUrl',
-        'pay_url',
-        'payUrl',
-        'url',
-        'checkout_url',
-        'checkoutUrl',
-        'redirect_url',
-        'redirectUrl',
-        'gateway_url',
-        'gatewayUrl',
-        'cashier_url',
-        'cashierUrl',
-      ]),
-      qrCode: _firstStringInMaps(maps, const [
-        'qr_code',
-        'qrCode',
-        'qrcode',
-        'qr',
-        'code_url',
-        'codeUrl',
-        'pay_qrcode',
-        'payQrcode',
-        'pay_qr_code',
-        'payQrCode',
-      ]),
-      qrCodeUrl: _firstStringInMaps(maps, const [
-        'qr_code_url',
-        'qrCodeUrl',
-        'qrcode_url',
-        'qrcodeUrl',
-        'qr_url',
-        'qrUrl',
-        'pay_qrcode_url',
-        'payQrcodeUrl',
-      ]),
+      paymentUrl: classified.paymentUrl,
+      qrCode: classified.qrCode.isNotEmpty
+          ? classified.qrCode
+          : _firstQrStringInMaps(maps, const [
+              'qr_code',
+              'qrCode',
+              'qrcode',
+              'qr',
+              'code_url',
+              'codeUrl',
+              'pay_info',
+              'payInfo',
+              'pay_params',
+              'payParams',
+              'alipay_qr',
+              'alipayQr',
+              'alipay_qrcode',
+              'alipayQrcode',
+              'qr_content',
+              'qrContent',
+              'pay_qrcode',
+              'payQrcode',
+              'pay_qr_code',
+              'payQrCode',
+            ]),
+      qrCodeUrl: classified.qrCodeUrl.isNotEmpty
+          ? classified.qrCodeUrl
+          : _firstQrUrlInMaps(maps, const [
+              'qr_code_url',
+              'qrCodeUrl',
+              'qrcode_url',
+              'qrcodeUrl',
+              'qr_url',
+              'qrUrl',
+              'pay_qrcode_url',
+              'payQrcodeUrl',
+              'pay_qr_url',
+              'payQrUrl',
+              'alipay_qrcode_url',
+              'alipayQrcodeUrl',
+              'alipay_qr_url',
+              'alipayQrUrl',
+            ]),
+      paymentHtml: classified.paymentHtml.isNotEmpty
+          ? classified.paymentHtml
+          : _firstHtmlInMaps(maps, const [
+              'payment_url',
+              'paymentUrl',
+              'pay_url',
+              'payUrl',
+              'url',
+              'html',
+              'form',
+              'form_html',
+              'formHtml',
+              'pay_form',
+              'payForm',
+              'payment_form',
+              'paymentForm',
+              'alipay_form',
+              'alipayForm',
+              'pay_info',
+              'payInfo',
+              'pay_params',
+              'payParams',
+              'content',
+              'body',
+            ]),
       transactionId: _firstStringInMaps(maps, const [
         'transaction_id',
         'transactionId',
         'payment_id',
         'paymentId',
       ]),
+      paymentMode: paymentMode,
+      payType: payType,
     );
+  }
+}
+
+class _PaymentValue {
+  const _PaymentValue({
+    this.paymentUrl = '',
+    this.qrCode = '',
+    this.qrCodeUrl = '',
+    this.paymentHtml = '',
+  });
+
+  final String paymentUrl;
+  final String qrCode;
+  final String qrCodeUrl;
+  final String paymentHtml;
+}
+
+_PaymentValue _classifyBackendPaymentValue(
+  String value, {
+  required String payType,
+  required String paymentMode,
+}) {
+  if (value.isEmpty) {
+    return const _PaymentValue();
+  }
+  if (_looksLikeHtml(value)) {
+    return _PaymentValue(paymentHtml: value);
+  }
+
+  final mode = paymentMode.toLowerCase();
+  if (mode == 'qrcode') {
+    if (_looksLikeAlipayPreCreateQr(value)) {
+      return _PaymentValue(qrCode: value);
+    }
+    final imageUrl = _imageLikeUrl(value, allowQrKeyword: true);
+    return _PaymentValue(
+      qrCode: imageUrl == null ? value : '',
+      qrCodeUrl: imageUrl ?? '',
+    );
+  }
+  if (mode == 'redirect' || mode == 'page') {
+    return _PaymentValue(paymentUrl: value);
+  }
+
+  final lowerPayType = payType.toLowerCase();
+  if ((lowerPayType == 'alipay' || lowerPayType == 'codepay_alipay') &&
+      _looksLikeAlipayPreCreateQr(value)) {
+    return _PaymentValue(qrCode: value);
+  }
+
+  if (_looksLikePaymentScheme(value)) {
+    return _PaymentValue(paymentUrl: value);
+  }
+
+  final imageUrl = _imageLikeUrl(value);
+  if (imageUrl != null) {
+    return _PaymentValue(qrCodeUrl: imageUrl);
+  }
+
+  if (_looksLikeUrl(value)) {
+    return _PaymentValue(paymentUrl: value);
+  }
+
+  return _PaymentValue(qrCode: value);
+}
+
+bool _looksLikeUrl(String value) {
+  final uri = Uri.tryParse(value);
+  return uri != null &&
+      (uri.isScheme('http') ||
+          uri.isScheme('https') ||
+          uri.isScheme('alipays'));
+}
+
+bool _looksLikePaymentScheme(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.scheme.isEmpty) {
+    return false;
+  }
+  return const {
+    'alipay',
+    'alipays',
+    'weixin',
+    'wechat',
+    'wxp',
+  }.contains(uri.scheme.toLowerCase());
+}
+
+bool _looksLikeHtml(String value) {
+  final text = value.toLowerCase();
+  return text.contains('<form') ||
+      text.contains('<html') ||
+      text.contains('<body') ||
+      text.contains('<script') ||
+      text.contains('<!doctype html');
+}
+
+bool _looksLikeAlipayPreCreateQr(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+    return false;
+  }
+  final host = uri.host.toLowerCase();
+  final path = uri.path.toLowerCase();
+  return (host == 'qr.alipay.com' || host.endsWith('.qr.alipay.com')) ||
+      (host.contains('alipay') &&
+          (path.contains('/qr/') ||
+              path.contains('qrcode') ||
+              uri.query.toLowerCase().contains('qrcode')));
+}
+
+dynamic _tryDecodeJson(String value) {
+  if ((!value.startsWith('{') || !value.endsWith('}')) &&
+      (!value.startsWith('[') || !value.endsWith(']'))) {
+    return null;
+  }
+  try {
+    return jsonDecode(value);
+  } catch (_) {
+    return null;
   }
 }
 
@@ -396,6 +639,83 @@ String _firstStringInMaps(
     }
   }
   return '';
+}
+
+String _firstHtmlInMaps(
+  List<Map<String, dynamic>> maps,
+  List<String> keys,
+) {
+  for (final map in maps) {
+    final value = _firstString(map, keys);
+    if (value.isNotEmpty && _looksLikeHtml(value)) {
+      return value;
+    }
+  }
+  return '';
+}
+
+String _firstQrStringInMaps(
+  List<Map<String, dynamic>> maps,
+  List<String> keys,
+) {
+  for (final map in maps) {
+    final value = _firstString(map, keys);
+    if (value.isEmpty || _looksLikeHtml(value)) {
+      continue;
+    }
+    if (_looksLikeAlipayPreCreateQr(value)) {
+      return value;
+    }
+    if (_looksLikeUrl(value) && _imageLikeUrl(value) == null) {
+      continue;
+    }
+    return value;
+  }
+  return '';
+}
+
+String _firstQrUrlInMaps(
+  List<Map<String, dynamic>> maps,
+  List<String> keys,
+) {
+  for (final map in maps) {
+    final value = _firstString(map, keys);
+    if (value.isEmpty || _looksLikeHtml(value)) {
+      continue;
+    }
+    final imageUrl = _imageLikeUrl(value, allowQrKeyword: true);
+    if (imageUrl != null) {
+      return imageUrl;
+    }
+  }
+  return '';
+}
+
+String? _imageLikeUrl(String value, {bool allowQrKeyword = false}) {
+  final uri = Uri.tryParse(value);
+  if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+    return null;
+  }
+  final path = uri.path.toLowerCase();
+  if (path.endsWith('.png') ||
+      path.endsWith('.jpg') ||
+      path.endsWith('.jpeg') ||
+      path.endsWith('.webp') ||
+      path.endsWith('.gif')) {
+    return value;
+  }
+  if (allowQrKeyword && !_looksLikeAlipayPreCreateQr(value)) {
+    final query = uri.query.toLowerCase();
+    if (path.contains('qrcode') ||
+        path.contains('qr_code') ||
+        path.contains('/qr') ||
+        query.contains('qrcode') ||
+        query.contains('qr_code') ||
+        query.contains('qr=')) {
+      return value;
+    }
+  }
+  return null;
 }
 
 List<Map<String, dynamic>> _nestedMaps(

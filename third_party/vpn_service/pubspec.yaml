@@ -37,6 +37,8 @@ flutter:
       android:
         package: io.nebula.vpn_service
         pluginClass: VpnServicePlugin
+      macos:
+        pluginClass: VpnServicePlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

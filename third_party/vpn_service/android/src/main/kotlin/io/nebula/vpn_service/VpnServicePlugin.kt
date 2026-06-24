@@ -153,8 +153,15 @@ class VpnServicePlugin :
     }
 
     private fun start(result: Result, timeoutMillis: Long) {
-        if (VpnServiceRuntime.preparedConfig == null) {
+        val config = VpnServiceRuntime.preparedConfig
+        if (config == null) {
             result.success(VpnServiceRuntime.errorResult("prepareConfig must be called before start"))
+            return
+        }
+        try {
+            config.validateForStart()
+        } catch (error: Throwable) {
+            result.success(VpnServiceRuntime.errorResult(error.message ?: error.toString()))
             return
         }
         if (!VpnServiceRuntime.beginStart { waitResult ->

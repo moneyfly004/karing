@@ -66,6 +66,7 @@ class VpnServiceImpl : VpnService() {
                 return@Thread
             }
             try {
+                config.validateForStart()
                 Log.i(TAG, "core starting config=${config.corePath} patch=${config.corePathPatch} finalPatch=${config.corePathPatchFinal}")
                 updateState("connecting")
                 clearErrorFile(config)

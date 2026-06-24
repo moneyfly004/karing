@@ -35,4 +35,35 @@ class WebviewHelper {
     ReturnResultError? error = await UrlLauncherUtils.loadUrl(url);
     return error != null;
   }
+
+  static Future<bool> loadHtml(
+    BuildContext context,
+    String html,
+    String viewTag, {
+    String? title,
+    String baseUrl = 'https://new.moneyfly.top/',
+    bool inappWebViewOpenExternal = false,
+  }) async {
+    if (html.isEmpty) {
+      return true;
+    }
+    if (await InAppWebViewScreen.makeSureEnvironmentCreated()) {
+      if (!context.mounted) {
+        return true;
+      }
+
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              settings: InAppWebViewScreen.routSettings(viewTag),
+              builder: (context) => InAppWebViewScreen(
+                    title: title ?? "",
+                    url: baseUrl,
+                    initialHtml: html,
+                    showOpenExternal: inappWebViewOpenExternal,
+                  )));
+      return true;
+    }
+    return true;
+  }
 }

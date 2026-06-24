@@ -201,20 +201,6 @@ class VPNService {
     config.time_connect = durationToString(setting.timeConnect);
     config.time_disconnect = durationToString(setting.timeDisconnect);
     config.sentry_minversion = RemoteConfigManager.getConfig().sentryMinVersion;
-    try {
-      await FlutterVpnService.prepareConfig(
-        config: config,
-        tunnelServicePath: PathUtils.serviceExePath(),
-        configFilePath: configFilePath,
-        systemExtension: _useSystemExtension,
-        bundleIdentifier: getBundleId(),
-        uiServerAddress: name,
-        uiLocalizedDescription: vpnName,
-        excludePorts: excludePorts,
-      );
-    } catch (err) {
-      return ReturnResult(error: ReturnResultError(err.toString()));
-    }
     File confFile = File(configFilePath);
     bool reinstall = false;
     if (Platform.isIOS || Platform.isMacOS) {
@@ -249,6 +235,21 @@ class VPNService {
       return ReturnResult(
           error:
               ReturnResultError("service config not created: $configFilePath"));
+    }
+
+    try {
+      await FlutterVpnService.prepareConfig(
+        config: config,
+        tunnelServicePath: PathUtils.serviceExePath(),
+        configFilePath: configFilePath,
+        systemExtension: _useSystemExtension,
+        bundleIdentifier: getBundleId(),
+        uiServerAddress: name,
+        uiLocalizedDescription: vpnName,
+        excludePorts: excludePorts,
+      );
+    } catch (err) {
+      return ReturnResult(error: ReturnResultError(err.toString()));
     }
 
     if (Platform.isMacOS) {

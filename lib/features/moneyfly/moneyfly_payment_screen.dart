@@ -39,7 +39,7 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
   void initState() {
     super.initState();
     _status = widget.order.status.isEmpty ? 'pending' : widget.order.status;
-    if (widget.payment.paymentUrl.isNotEmpty) {
+    if (widget.payment.hasOpenablePayment) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _openPayment());
     }
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
@@ -152,7 +152,7 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
           const SizedBox(height: 18),
           FilledButton.icon(
             style: moneyflyPrimaryButtonStyle(),
-            onPressed: widget.payment.paymentUrl.isEmpty
+            onPressed: !widget.payment.hasOpenablePayment
                 ? (_polling ? null : _poll)
                 : (_opened ? _poll : _openPayment),
             icon: _polling
@@ -164,10 +164,10 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Icon(widget.payment.paymentUrl.isEmpty || _opened
+                : Icon(!widget.payment.hasOpenablePayment || _opened
                     ? Icons.refresh_rounded
                     : Icons.payment_rounded),
-            label: Text(widget.payment.paymentUrl.isEmpty || _opened
+            label: Text(!widget.payment.hasOpenablePayment || _opened
                 ? '刷新支付状态'
                 : '打开支付页面'),
           ),
@@ -296,7 +296,14 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
   }
 
   String? get _imageUrl {
-    for (final value in [widget.payment.qrCodeUrl, widget.payment.qrCode]) {
+    final explicitQrUrl = widget.payment.qrCodeUrl;
+    final explicitUri = Uri.tryParse(explicitQrUrl);
+    if (explicitUri != null &&
+        (explicitUri.isScheme('http') || explicitUri.isScheme('https'))) {
+      return explicitQrUrl;
+    }
+
+    for (final value in [widget.payment.qrCode]) {
       final uri = Uri.tryParse(value);
       if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
         final path = uri.path.toLowerCase();
@@ -304,8 +311,7 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
             path.endsWith('.jpg') ||
             path.endsWith('.jpeg') ||
             path.endsWith('.webp') ||
-            path.endsWith('.gif') ||
-            value.contains('qr')) {
+            path.endsWith('.gif')) {
           return value;
         }
       }
@@ -328,19 +334,52 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
   }
 
   Future<void> _openPayment() async {
-    if (_opened || widget.payment.paymentUrl.isEmpty) {
+    if (_opened || !widget.payment.hasOpenablePayment) {
       return;
     }
     _opened = true;
-    await WebviewHelper.loadUrl(
-      context,
-      widget.payment.paymentUrl,
-      'moneyfly_payment',
-      title: '支付订单',
-      useInappWebViewForPC: true,
-      inappWebViewOpenExternal: true,
-    );
+    if (widget.payment.paymentHtml.isNotEmpty) {
+      await WebviewHelper.loadHtml(
+        context,
+        _paymentHtmlDocument(widget.payment.paymentHtml),
+        'moneyfly_payment',
+        title: '支付订单',
+        inappWebViewOpenExternal: true,
+      );
+    } else {
+      await WebviewHelper.loadUrl(
+        context,
+        widget.payment.paymentUrl,
+        'moneyfly_payment',
+        title: '支付订单',
+        useInappWebViewForPC: true,
+        inappWebViewOpenExternal: true,
+      );
+    }
     await _poll();
+  }
+
+  String _paymentHtmlDocument(String html) {
+    final lower = html.toLowerCase();
+    final autoSubmit = lower.contains('<form') &&
+        !lower.contains('.submit(') &&
+        !lower.contains('submit()');
+    if (!autoSubmit) {
+      return html;
+    }
+    final script = '''
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  var form = document.querySelector('form');
+  if (form) form.submit();
+});
+</script>
+''';
+    if (lower.contains('</body>')) {
+      return html.replaceFirst(
+          RegExp('</body>', caseSensitive: false), '$script</body>');
+    }
+    return '$html$script';
   }
 
   Future<void> _poll() async {

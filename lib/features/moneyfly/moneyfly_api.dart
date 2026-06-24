@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:karing/app/utils/app_utils.dart';
+import 'package:karing/app/utils/platform_utils.dart';
 import 'package:karing/features/moneyfly/moneyfly_models.dart';
 
 class MoneyflyApiException implements Exception {
@@ -189,19 +190,19 @@ class MoneyflyApi {
     required int orderId,
     required int paymentMethodId,
   }) async {
-    final data = await _request<Map<String, dynamic>>(
+    final data = await _request<dynamic>(
       'POST',
       '/payment',
       data: {
         'order_id': orderId,
         'payment_method_id': paymentMethodId,
-        'is_mobile': true,
+        'is_mobile': PlatformUtils.isMobile(),
         'return_url': AppUtils.officialWebsiteUrl,
         'cancel_url': AppUtils.officialWebsiteUrl,
       },
       csrf: true,
     );
-    return MoneyflyPayment.fromJson(data);
+    return MoneyflyPayment.fromResponse(data);
   }
 
   Future<Map<String, dynamic>> orderStatus(String orderNo) async {
@@ -215,62 +216,21 @@ class MoneyflyApi {
 
   Future<void> deleteDevice(String id) async {
     final encoded = Uri.encodeComponent(id);
-    await _requestWithFallback<dynamic>(
+    await _request<dynamic>(
       'DELETE',
-      [
-        '/subscriptions/devices/$encoded',
-        '/devices/$encoded',
-        '/user/devices/$encoded',
-      ],
+      '/subscriptions/devices/$encoded',
       csrf: true,
     );
   }
 
   Future<void> updateDeviceRemark(String id, String remark) async {
     final encoded = Uri.encodeComponent(id);
-    await _requestWithFallback<dynamic>(
+    await _request<dynamic>(
       'PUT',
-      [
-        '/subscriptions/devices/$encoded/remark',
-        '/devices/$encoded/remark',
-        '/devices/$encoded',
-        '/user/devices/$encoded/remark',
-      ],
-      data: {
-        'remark': remark,
-        'remarks': remark,
-        'note': remark,
-      },
+      '/subscriptions/devices/$encoded/remark',
+      data: {'remark': remark},
       csrf: true,
     );
-  }
-
-  Future<T> _requestWithFallback<T>(
-    String method,
-    List<String> paths, {
-    Object? data,
-    bool auth = true,
-    bool csrf = false,
-  }) async {
-    MoneyflyApiException? lastError;
-    for (final path in paths) {
-      try {
-        return await _request<T>(
-          method,
-          path,
-          data: data,
-          auth: auth,
-          csrf: csrf,
-        );
-      } on MoneyflyApiException catch (err) {
-        lastError = err;
-        final status = err.statusCode ?? 0;
-        if (status != 404 && status != 405) {
-          rethrow;
-        }
-      }
-    }
-    throw lastError ?? MoneyflyApiException('请求失败');
   }
 
   Future<T> _request<T>(

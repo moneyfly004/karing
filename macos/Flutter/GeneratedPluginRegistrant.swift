@@ -28,6 +28,7 @@ import sentry_flutter
 import share_plus
 import tray_manager
 import url_launcher_macos
+import vpn_service
 import webview_flutter_wkwebview
 import window_manager
 
@@ -55,6 +56,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
   TrayManagerPlugin.register(with: registry.registrar(forPlugin: "TrayManagerPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+  VpnServicePlugin.register(with: registry.registrar(forPlugin: "VpnServicePlugin"))
   WebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "WebViewFlutterPlugin"))
   WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
 }

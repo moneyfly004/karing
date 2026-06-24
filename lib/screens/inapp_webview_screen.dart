@@ -171,6 +171,7 @@ class InAppWebViewScreen extends StatefulWidget {
 
   final String title;
   final String url;
+  final String initialHtml;
   final bool enableDebug;
   final bool showGoBackGoForward;
   final bool showOpenExternal;
@@ -185,6 +186,7 @@ class InAppWebViewScreen extends StatefulWidget {
     super.key,
     required this.title,
     required this.url,
+    this.initialHtml = "",
     this.enableDebug = kDebugMode,
     this.showGoBackGoForward = false,
     this.showOpenExternal = false,
@@ -451,8 +453,19 @@ class _InAppWebViewScreenState extends State<InAppWebViewScreen> {
                                               webViewEnvironment:
                                                   InAppWebViewScreen
                                                       ._webViewEnvironment,
-                                              initialUrlRequest: URLRequest(
-                                                  url: WebUri(widget.url)),
+                                              initialUrlRequest: widget
+                                                      .initialHtml.isEmpty
+                                                  ? URLRequest(
+                                                      url: WebUri(widget.url))
+                                                  : null,
+                                              initialData: widget
+                                                      .initialHtml.isEmpty
+                                                  ? null
+                                                  : InAppWebViewInitialData(
+                                                      data: widget.initialHtml,
+                                                      baseUrl:
+                                                          WebUri(widget.url),
+                                                    ),
                                               // initialUrlRequest:
                                               // URLRequest(url: WebUri(Uri.base.toString().replaceFirst("/#/", "/") + 'page.html')),
                                               // initialFile: "assets/index.html",

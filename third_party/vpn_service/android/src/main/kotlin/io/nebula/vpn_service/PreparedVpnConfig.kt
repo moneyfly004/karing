@@ -18,6 +18,28 @@ internal data class PreparedVpnConfig(
     val externalController: String
         get() = if (controlPort > 0) "127.0.0.1:$controlPort" else ""
 
+    fun validateForStart() {
+        requireReadableFile(corePath, "core config")
+        if (baseDir.isNotBlank()) {
+            val base = File(baseDir)
+            if (!base.exists() && !base.mkdirs()) {
+                error("base directory not created: $baseDir")
+            }
+            if (!base.isDirectory) {
+                error("base directory is not a directory: $baseDir")
+            }
+            val probe = File(base, ".vpn_service_write_test")
+            runCatching {
+                probe.writeText("ok")
+                probe.delete()
+            }.getOrElse {
+                error("base directory is not writable: $baseDir: ${it.message}")
+            }
+        }
+        ensureParentWritable(logPath, "log file")
+        ensureParentWritable(errorPath, "error file")
+    }
+
     companion object {
         fun fromMethodArguments(args: Map<*, *>): PreparedVpnConfig {
             val config = args["config"] as? Map<*, *>
@@ -59,6 +81,39 @@ internal data class PreparedVpnConfig(
                 is String -> value.equals("true", ignoreCase = true)
                 else -> false
             }
+
+        private fun requireReadableFile(path: String, label: String) {
+            if (path.isBlank()) {
+                error("$label path is empty")
+            }
+            val file = File(path)
+            if (!file.isFile) {
+                error("$label not found: $path")
+            }
+            if (file.length() == 0L) {
+                error("$label is empty: $path")
+            }
+            runCatching {
+                file.inputStream().use { input ->
+                    input.read()
+                }
+            }.getOrElse {
+                error("$label is not readable: $path: ${it.message}")
+            }
+        }
+
+        private fun ensureParentWritable(path: String, label: String) {
+            if (path.isBlank()) {
+                return
+            }
+            val parent = File(path).parentFile ?: return
+            if (!parent.exists() && !parent.mkdirs()) {
+                error("$label parent directory not created: ${parent.absolutePath}")
+            }
+            if (!parent.isDirectory) {
+                error("$label parent path is not a directory: ${parent.absolutePath}")
+            }
+        }
 
         private fun JSONObject.toMap(): Map<String, Any?> {
             val map = mutableMapOf<String, Any?>()

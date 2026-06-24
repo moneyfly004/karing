@@ -456,15 +456,20 @@ class FlutterVpnService {
       return VpnServiceWaitResult.error(
           'service config not found: $coreConfigPath');
     }
-    try {
-      final configSize = await File(coreConfigPath).length();
-      if (configSize == 0) {
-        return VpnServiceWaitResult.error(
-            'service config is empty: $coreConfigPath');
-      }
-    } catch (err) {
+    final coreConfigError =
+        await _desktopReadableFileError(coreConfigPath, 'core config');
+    if (coreConfigError != null) {
+      return VpnServiceWaitResult.error(coreConfigError);
+    }
+    final serviceConfigPath = _desktopConfigFilePath;
+    if (serviceConfigPath.isEmpty || !await File(serviceConfigPath).exists()) {
       return VpnServiceWaitResult.error(
-          'service config is not readable: $coreConfigPath: $err');
+          'service runtime config not found: $serviceConfigPath');
+    }
+    final serviceConfigError =
+        await _desktopReadableFileError(serviceConfigPath, 'runtime config');
+    if (serviceConfigError != null) {
+      return VpnServiceWaitResult.error(serviceConfigError);
     }
 
     await _desktopStop();
@@ -474,13 +479,30 @@ class FlutterVpnService {
 
     final stdoutTail = StringBuffer();
     final stderrTail = StringBuffer();
+    var launchDescription = '';
     try {
-      final workDir = File(coreConfigPath).parent.path.isNotEmpty
-          ? File(coreConfigPath).parent.path
-          : File(servicePath).parent.path;
+      final workDir = config.base_dir.isNotEmpty
+          ? config.base_dir
+          : File(serviceConfigPath).parent.path;
+      if (workDir.isEmpty || !await Directory(workDir).exists()) {
+        return VpnServiceWaitResult.error(
+          'service working directory not found: $workDir',
+        );
+      }
+      final arguments = [
+        'run',
+        '-c',
+        coreConfigPath,
+        '-s',
+        serviceConfigPath,
+        '-D',
+        workDir,
+        '--disable-color',
+      ];
+      launchDescription = '$servicePath ${arguments.join(' ')}';
       final process = await Process.start(
         servicePath,
-        ['run', '-c', coreConfigPath],
+        arguments,
         workingDirectory: workDir,
         mode: ProcessStartMode.normal,
       );
@@ -516,7 +538,9 @@ class FlutterVpnService {
         _desktopState = FlutterVpnServiceState.disconnected;
         _notifyState(_desktopState);
         return VpnServiceWaitResult.error(
-          'service exited before ready${_desktopOutputMessage(stdoutTail, stderrTail)}',
+          'service exited before ready'
+          '${_desktopOutputMessage(stdoutTail, stderrTail)}'
+          '${launchDescription.isEmpty ? '' : ' | command: $launchDescription'}',
         );
       }
       await Future<void>.delayed(const Duration(milliseconds: 250));
@@ -558,6 +582,26 @@ class FlutterVpnService {
     }
     _desktopState = FlutterVpnServiceState.disconnected;
     _notifyState(_desktopState);
+  }
+
+  static Future<String?> _desktopReadableFileError(
+    String path,
+    String label,
+  ) async {
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        return '$label not found: $path';
+      }
+      final size = await file.length();
+      if (size == 0) {
+        return '$label is empty: $path';
+      }
+      await file.openRead(0, size > 1 ? 1 : size).drain<void>();
+      return null;
+    } catch (err) {
+      return '$label is not readable: $path: $err';
+    }
   }
 
   static void _appendDesktopOutput(StringBuffer buffer, String value) {
