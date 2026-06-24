@@ -108,25 +108,22 @@ class RemoteConfigDonate {
 
 class RemoteConfig {
   static const String kDefaultSentry = "o4508911573663744.ingest.sentry.io";
-  static const String kDefaultHost = "karing.app";
-  static const String kDefaultNotice = "https://dot.$kDefaultHost/notice2.json";
-  static const String kDefaultConfig = "https://dot.$kDefaultHost/config.json";
-  static const String kDefaultAutoUpdate =
-      "https://dot.$kDefaultHost/autoupdate.json";
-  static const String kDefaultOutpost = "https://outpost.$kDefaultHost/put";
-  static const String kDefaultHarry = "https://harry.$kDefaultHost/spell/";
-  static const String kDefaultGetTranffic =
-      "https://outpost.$kDefaultHost/airport";
+  static const String kDefaultHost = "new.moneyfly.top";
+  static const String kDefaultNotice = "";
+  static const String kDefaultConfig = "";
+  static const String kDefaultAutoUpdate = "";
+  static const String kDefaultOutpost = "";
+  static const String kDefaultHarry = "";
+  static const String kDefaultGetTranffic = "";
   static const String kDefaultGetTranfficFrom = "";
-  static const String kDefaultTutorial = "https://$kDefaultHost/quickstart/";
-  static const String kDefaultFaq = "https://$kDefaultHost/faq/";
+  static const String kDefaultTutorial = "";
+  static const String kDefaultFaq = "";
   static const String kDefaultRulesets =
       "https://github.com/KaringX/karing-ruleset";
-  static const String kDefaultDownload = "https://$kDefaultHost/download/";
-  static const String kDefaultTelegram = "https://t.me/KaringApp";
-  static const String kDefaultFollow = "https://github.com/KaringX/karing";
-  static const String kDefaultPrivacyPolicy =
-      "https://dot.$kDefaultHost/privacy_policy.txt";
+  static const String kDefaultDownload = "";
+  static const String kDefaultTelegram = "";
+  static const String kDefaultFollow = "";
+  static const String kDefaultPrivacyPolicy = "";
   static const String kDefaultDnsLeakDetection = "https://browserleaks.com/dns";
   static const String kDefaultProxyLeakDetection =
       "https://proxy.incolumitas.com/proxy_detect.html";
@@ -136,8 +133,7 @@ class RemoteConfig {
       "https://github.com/KaringX/karing-ruleset/raw/sing/geo/geoip";
   static const String kDefaultAcl =
       "https://github.com/KaringX/karing-ruleset/raw/sing/ACL4SSR";
-  static const String kIspPanelJs =
-      "https://harry.karing.app/assets/bind.js?v=";
+  static const String kIspPanelJs = "";
 
   String latestCheck = "";
   List<String> forwards = [];
@@ -158,7 +154,7 @@ class RemoteConfig {
   String outpost = kDefaultOutpost;
   String harry = kDefaultHarry;
   String ispPrepare(String id) {
-    return "https://potter.$kDefaultHost/isp/$id/base.json";
+    return "";
   }
 
   String sentry = kDefaultSentry;
@@ -326,6 +322,7 @@ class RemoteConfig {
     if (!isSelfHost(donateUrl, host)) {
       donateUrl = "";
     }
+    sanitizeForMoneyFly();
   }
 
   static bool isSelfHost(String url, String host) {
@@ -337,6 +334,46 @@ class RemoteConfig {
       return true;
     }
     return false;
+  }
+
+  static bool isKaringHostedUrl(String url) {
+    Uri? uri = Uri.tryParse(url);
+    if (uri == null) {
+      return false;
+    }
+    String host = uri.host.toLowerCase();
+    return host == "karing.app" || host.endsWith(".karing.app");
+  }
+
+  static String removeKaringHostedUrl(String url) {
+    return isKaringHostedUrl(url) ? "" : url;
+  }
+
+  void sanitizeForMoneyFly() {
+    if (host == "karing.app" || host.endsWith(".karing.app")) {
+      host = kDefaultHost;
+    }
+    notice = removeKaringHostedUrl(notice);
+    config = removeKaringHostedUrl(config);
+    autoUpdate = removeKaringHostedUrl(autoUpdate);
+    outpost = removeKaringHostedUrl(outpost);
+    harry = removeKaringHostedUrl(harry);
+    getTranffic = removeKaringHostedUrl(getTranffic);
+    tutorial = removeKaringHostedUrl(tutorial);
+    faq = removeKaringHostedUrl(faq);
+    download = removeKaringHostedUrl(download);
+    telegram = removeKaringHostedUrl(telegram);
+    follow = removeKaringHostedUrl(follow);
+    privacyPolicy = removeKaringHostedUrl(privacyPolicy);
+    ispPanelJs = removeKaringHostedUrl(ispPanelJs);
+    donateUrl = removeKaringHostedUrl(donateUrl);
+    for (final channel in channels) {
+      channel.url = removeKaringHostedUrl(channel.url);
+      channel.rateUrl = removeKaringHostedUrl(channel.rateUrl);
+    }
+    for (final profile in getProfile) {
+      profile.url = removeKaringHostedUrl(profile.url);
+    }
   }
 
   static RemoteConfig fromJsonStatic(Map<String, dynamic>? map) {

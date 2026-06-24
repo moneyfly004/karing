@@ -87,6 +87,8 @@ class RemoteConfigManager {
       if (content.isNotEmpty) {
         var config = jsonDecode(content);
         _config.fromJson(config);
+        _config.sanitizeForMoneyFly();
+        _saveConfig();
       }
     } catch (err, stacktrace) {}
   }
@@ -128,6 +130,7 @@ class RemoteConfigManager {
       _duration = const Duration(hours: 1);
       _config = gConfig.data!;
       _config.latestCheck = now.toString();
+      _config.sanitizeForMoneyFly();
 
       _saveConfig();
       Future.delayed(const Duration(milliseconds: 300), () async {

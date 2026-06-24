@@ -316,6 +316,11 @@ class VPNService {
       await FlutterVpnService.setAlwaysOn(false);
     }
 
+    ReturnResultError? coreConfigRepairError = await _repairServiceCoreConfig();
+    if (coreConfigRepairError != null) {
+      return coreConfigRepairError;
+    }
+
     VpnServiceWaitResult result = await FlutterVpnService.restart(timeout);
     if (result.type == VpnServiceWaitType.timeout) {
       String message = result.err?.message ?? "service restart timeout";
@@ -379,6 +384,11 @@ class VPNService {
         ], PathUtils.serviceExeName());
       }
     }
+    ReturnResultError? coreConfigRepairError = await _repairServiceCoreConfig();
+    if (coreConfigRepairError != null) {
+      return coreConfigRepairError;
+    }
+
     VpnServiceWaitResult result = await FlutterVpnService.start(timeout);
     if (result.type == VpnServiceWaitType.timeout) {
       String message = result.err?.message ?? "service start timeout";
@@ -923,6 +933,7 @@ class VPNService {
         config["log"] = log;
         config["inbounds"] = inbounds;
         config["experimental"] = experimental;
+        config = SingboxConfigSanitizer.sanitizeConfigMap(config);
         const JsonEncoder encoder = JsonEncoder.withIndent('  ');
         String configContent = encoder.convert(config);
         await File(configPath).writeAsString(configContent, flush: true);
@@ -1058,6 +1069,30 @@ class VPNService {
       if (!await fileCache.exists()) {
         await fileCache.create(recursive: true);
       }
+    } catch (err) {
+      return ReturnResultError(err.toString());
+    }
+    return null;
+  }
+
+  static Future<ReturnResultError?> _repairServiceCoreConfig() async {
+    String configPath = await PathUtils.serviceCoreConfigFilePath();
+    var file = File(configPath);
+    try {
+      if (!await file.exists()) {
+        return null;
+      }
+      String content = await file.readAsString();
+      if (content.trim().isEmpty) {
+        return null;
+      }
+      var decoded = jsonDecode(content);
+      if (decoded is! Map) {
+        return null;
+      }
+      var sanitized = SingboxConfigSanitizer.sanitizeConfigMap(decoded);
+      const JsonEncoder encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(sanitized), flush: true);
     } catch (err) {
       return ReturnResultError(err.toString());
     }

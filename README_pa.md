@@ -51,7 +51,7 @@
 </summary>
 
 ### 🤝VPN ਪ੍ਰਦਾਨਕਾਂ ਨਾਲ ਸਹਿਯੋਗ ਦਾ ਐਲਾਨ
-- 👉[ਸੰਪਰਕ ਜਾਣਕਾਰੀ ਅਤੇ ਸਹਿਯੋਗ ਦੇ ਰੂਪ](https://karing.app/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
+- 👉[ਸੰਪਰਕ ਜਾਣਕਾਰੀ ਅਤੇ ਸਹਿਯੋਗ ਦੇ ਰੂਪ](https://new.moneyfly.top/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
 </details>
 
 ## ਸਿਸਟਮ ਲੋੜਾਂ
@@ -68,18 +68,18 @@
 - **IOS/TvOS TestFlight**:
   - https://testflight.apple.com/join/RLU59OsJ
 - **Android**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - APKPure https://apkpure.com/p/com.nebula.karing
   - Amazon AppStore https://www.amazon.com/gp/product/B0DJSQDDM8
 - **Windows/Macos/Linux**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - `brew install karing`
 
 ### ਅਕਸਰ ਪੁੱਛੇ ਜਾਣ ਵਾਲੇ ਸਵਾਲ
 
-> [FAQ|en](https://karing.app/en/faq/)
+> [FAQ|en](https://new.moneyfly.top/en/faq/)
 
 
 ## ਸਕਰੀਨਸ਼ਾਟ
@@ -112,7 +112,7 @@
 - [Meta-Docs](https://wiki.metacubex.one/config/): Clash.Meta docs
 
 ### ਟੀਮ:
-- [Karing](https://karing.app): https://karing.app
+- [Karing](https://new.moneyfly.top): https://new.moneyfly.top
 - [Clash Mi](https://clashmi.app/): https://clashmi.app/
 - [sing-poet](https://github.com/KaringX/sing-poet)
 

@@ -193,19 +193,19 @@ class MoneyflyAccountController extends ChangeNotifier {
   Future<void> syncManagedConfig() async {
     final sub = subscription;
     final storedGroupId = await _store.readManagedGroupId();
-    if (sub == null || sub.singboxUrl.isEmpty) {
+    if (sub == null || sub.subscriptionUrl.isEmpty) {
       if (storedGroupId != null && storedGroupId.isNotEmpty) {
         await ServerManager.removeGroup(storedGroupId, true);
       }
       return;
     }
 
-    final managedUrl = await _managedSubscriptionUrl(sub.singboxUrl);
+    final managedUrl = await _managedSubscriptionUrl(sub.subscriptionUrl);
     final error = await ServerManager.addRemoteConfig(
       storedGroupId ?? '',
       managedRemark,
       managedUrl,
-      SubscriptionLinkType.singbox,
+      SubscriptionLinkType.unknown,
       '',
       ProxyFilter(),
       const [],

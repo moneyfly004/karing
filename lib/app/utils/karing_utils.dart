@@ -83,6 +83,9 @@ abstract final class KaringUtils {
   static Future<ReturnResult<List<KaringAutoupdateItem>>>
       getAutoupdate() async {
     String url = RemoteConfigManager.getConfig().autoUpdate;
+    if (url.isEmpty) {
+      return ReturnResult(data: []);
+    }
     late ReturnResult<String> response;
     List<int?> ports = await VPNService.getPortsByPrefer(false);
     for (var port in ports) {
@@ -118,6 +121,9 @@ abstract final class KaringUtils {
   static Future<ReturnResult<RemoteConfig>> getRemoteConfig() async {
     RemoteConfig rc = RemoteConfig();
     String url = RemoteConfigManager.getConfig().config;
+    if (url.isEmpty) {
+      return ReturnResult(data: rc);
+    }
     late ReturnResult<String> response;
     List<int?> ports = await VPNService.getPortsByPrefer(false);
     for (var port in ports) {
@@ -152,6 +158,9 @@ abstract final class KaringUtils {
     String url = await UrlLauncherUtils.reorganizationUrlWithAnchor(
         RemoteConfigManager.getConfig().ispPrepare(ispId),
         bodyLen: int.parse(ispId));
+    if (url.isEmpty) {
+      return ReturnResult(error: ReturnResultError("url is empty"));
+    }
     late ReturnResult<String> response;
     List<int?> ports = await VPNService.getPortsByPrefer(false);
     for (var port in ports) {

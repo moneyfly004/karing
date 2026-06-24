@@ -12,7 +12,7 @@
 [English](./README.md) | 简体中文 | [繁體中文](./README_tw.md) | [日本語](./README_ja.md) | [한국어](./README_ko.md) | [Español](./README_es.md) | [Français](./README_fr.md) | [Deutsch](./README_de.md) | [Italiano](./README_it.md) | [Tiếng Việt](./README_vi.md) | [Türkçe](./README_tr.md) | [Русский](./README_ru.md) | [فارسی](./README_fa.md) | [العربية](./README_ar.md) | [Português](./README_pt.md) | [Українська](./README_uk.md) | [Polski](./README_pl.md) | [اردو](./README_ur.md) | [Svenska](./README_sv.md) | [Norsk](./README_no.md) | [Nederlands](./README_nl.md) | [हिन्दी](./README_hi.md) | [Ελληνικά](./README_el.md) | [Dansk](./README_da.md) | [বাংলা](./README_bn.md) | [ไทย](./README_th.md) | [ਪੰਜਾਬੀ](./README_pa.md)
 
 ### 注意：Karing 未在任何视频平台开设过有关 Karing 的任何频道
-- **官方网站: https://karing.app**
+- **官方网站: https://new.moneyfly.top**
 ## 特点
 - 兼容 Clash、V2ray/V2fly、Sing-box、Shadowsocks、Sub、Github 订阅。
   - 完全支持 `clash` 配置，部分支持 `clash.meta` 配置。
@@ -51,7 +51,7 @@
 </summary>
 
 ### 🤝VPN 提供商合作公告
-- 👉[联系方式与合作形式](https://karing.app/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
+- 👉[联系方式与合作形式](https://new.moneyfly.top/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
 </details>
 
 ## 系统要求
@@ -68,18 +68,18 @@
 - **IOS/TvOS TestFlight**:
   - https://testflight.apple.com/join/RLU59OsJ
 - **Android**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - APKPure https://apkpure.com/p/com.nebula.karing
   - Amazon AppStore https://www.amazon.com/gp/product/B0DJSQDDM8
 - **Windows/Macos/Linux**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - `brew install karing`
 
 ### 常见问题
 
-> [FAQ|cn](https://karing.app/en/faq/)
+> [FAQ|cn](https://new.moneyfly.top/en/faq/)
 
 
 ## 截图
@@ -112,7 +112,7 @@
 - [Meta-Docs](https://wiki.metacubex.one/config/): Clash.Meta 文档
 
 ### Karing 团队：
-- [Karing](https://karing.app): https://karing.app
+- [Karing](https://new.moneyfly.top): https://new.moneyfly.top
 - [Clash Mi](https://clashmi.app/): https://clashmi.app/
 - [sing-poet](https://github.com/KaringX/sing-poet)
 

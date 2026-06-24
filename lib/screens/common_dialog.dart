@@ -103,6 +103,9 @@ class CommonDialog {
 
     final tcontext = Translations.of(context);
     var remoteConfig = RemoteConfigManager.getConfig();
+    if (remoteConfig.faq.isEmpty) {
+      return;
+    }
     for (var anchor in remoteConfig.faqAnchor) {
       late String anchorNew;
       try {

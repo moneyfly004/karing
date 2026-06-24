@@ -51,7 +51,7 @@
 </summary>
 
 ### 🤝VPN 提供商合作公告
-- 👉[聯繫方式與合作形式](https://karing.app/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
+- 👉[聯繫方式與合作形式](https://new.moneyfly.top/blog/isp/cooperation#for-vpn-providers-from-other-regions)👈
 </details>
 
 ## 系統要求
@@ -68,18 +68,18 @@
 - **IOS/TvOS TestFlight**:
   - https://testflight.apple.com/join/RLU59OsJ
 - **Android**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - APKPure https://apkpure.com/p/com.nebula.karing
   - Amazon AppStore https://www.amazon.com/gp/product/B0DJSQDDM8
 - **Windows/Macos/Linux**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - `brew install karing`
 
 ### 常見問題
 
-> [FAQ|tw](https://karing.app/en/faq/)
+> [FAQ|tw](https://new.moneyfly.top/en/faq/)
 
 
 ## 截圖
@@ -112,7 +112,7 @@
 - [Meta-Docs](https://wiki.metacubex.one/config/): Clash.Meta 文檔
 
 ### Karing 團隊：
-- [Karing](https://karing.app): https://karing.app
+- [Karing](https://new.moneyfly.top): https://new.moneyfly.top
 - [Clash Mi](https://clashmi.app/): https://clashmi.app/
 - [sing-poet](https://github.com/KaringX/sing-poet)
 

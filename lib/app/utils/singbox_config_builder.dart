@@ -146,11 +146,13 @@ class SingboxDNSServerOptions {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> ret = {};
     ret['tag'] = tag;
-    if (address.isNotEmpty) {
-      ret['address'] = address;
-    }
-    if (addresses != null) {
-      ret['addresses'] = addresses;
+    final normalizedAddress = SingboxConfigSanitizer.normalizeDnsAddressForTag(
+      tag,
+      address: address,
+      addresses: addresses,
+    );
+    if (normalizedAddress.isNotEmpty) {
+      ret['address'] = normalizedAddress;
     }
     if (address_resolver != null) {
       ret['address_resolver'] = address_resolver;
@@ -171,6 +173,148 @@ class SingboxDNSServerOptions {
       ret['client_subnet'] = client_subnet;
     }
     return ret;
+  }
+}
+
+class SingboxConfigSanitizer {
+  static const String fallbackDirectDns = "udp://223.5.5.5";
+  static const String fallbackRemoteDns = "https://1.1.1.1/dns-query";
+
+  static Map<String, dynamic> sanitizeConfigMap(Map<dynamic, dynamic> map) {
+    final config = _stringKeyMap(map);
+    final dns = config["dns"];
+    if (dns is Map) {
+      config["dns"] = sanitizeDnsMap(dns);
+    }
+    return config;
+  }
+
+  static Map<String, dynamic> sanitizeDnsMap(Map<dynamic, dynamic> map) {
+    final dns = _stringKeyMap(map);
+    final servers = dns["servers"];
+    if (servers is List) {
+      final sanitizedServers = <dynamic>[];
+      for (final server in servers) {
+        if (server is Map) {
+          sanitizedServers.add(sanitizeDnsServerMap(server));
+        } else {
+          sanitizedServers.add(server);
+        }
+      }
+      dns["servers"] = sanitizedServers;
+    }
+    return dns;
+  }
+
+  static Map<String, dynamic> sanitizeDnsServerMap(Map<dynamic, dynamic> map) {
+    final server = _stringKeyMap(map);
+    final tag = server["tag"]?.toString() ?? "";
+    final address = server["address"]?.toString() ?? "";
+    final addresses = _listString(server["addresses"]);
+    final normalized = normalizeDnsAddressForTag(
+      tag,
+      address: address,
+      addresses: addresses,
+    );
+
+    server["address"] = normalized;
+    server.remove("addresses");
+
+    if (normalized == "fakeip" || normalized.startsWith("rcode://")) {
+      server.remove("address_resolver");
+      server.remove("detour");
+    }
+    return server;
+  }
+
+  static String normalizeDnsAddressForTag(
+    String tag, {
+    String address = "",
+    Iterable<String>? addresses,
+  }) {
+    return normalizeDnsAddress(
+      [
+        address,
+        if (addresses != null) ...addresses,
+      ],
+      fallback: fallbackDnsForTag(tag),
+    );
+  }
+
+  static String normalizeDnsAddress(
+    Iterable<String> addresses, {
+    required String fallback,
+  }) {
+    for (final raw in addresses) {
+      final address = raw.trim();
+      if (isUsableDnsAddress(address)) {
+        return address;
+      }
+    }
+    return fallback;
+  }
+
+  static List<String> normalizeDnsAddresses(
+    Iterable<String> addresses, {
+    required String fallback,
+  }) {
+    final normalized = <String>[];
+    for (final raw in addresses) {
+      final address = raw.trim();
+      if (!isUsableDnsAddress(address)) {
+        continue;
+      }
+      if (!normalized.contains(address)) {
+        normalized.add(address);
+      }
+    }
+    if (normalized.isEmpty) {
+      normalized.add(fallback);
+    }
+    return normalized;
+  }
+
+  static String fallbackDnsForTag(String tag) {
+    switch (tag) {
+      case kDnsTagProxy:
+        return fallbackRemoteDns;
+      case kDnsTagBlock:
+        return "rcode://success";
+      case kDnsTagFakeIp:
+        return "fakeip";
+      default:
+        return fallbackDirectDns;
+    }
+  }
+
+  static bool isUsableDnsAddress(String address) {
+    if (address.isEmpty ||
+        address == SettingConfigItemDNS.kDNSLocal ||
+        address == SettingConfigItemDNS.kDNSDHCP) {
+      return false;
+    }
+    if (address == "fakeip" || address.startsWith("rcode://")) {
+      return true;
+    }
+    if (SettingConfigItemDNS.isDNSValidScheme(address)) {
+      return true;
+    }
+    return NetworkUtils.isIpv4(address) || NetworkUtils.isIpv6(address);
+  }
+
+  static Map<String, dynamic> _stringKeyMap(Map<dynamic, dynamic> map) {
+    final ret = <String, dynamic>{};
+    map.forEach((key, value) {
+      ret[key.toString()] = value;
+    });
+    return ret;
+  }
+
+  static List<String> _listString(dynamic value) {
+    if (value is List) {
+      return value.map((item) => item.toString()).toList();
+    }
+    return const [];
   }
 }
 

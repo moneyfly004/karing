@@ -17,7 +17,6 @@ import 'package:karing/app/modules/auto_update_manager.dart';
 import 'package:karing/app/modules/biz.dart';
 import 'package:karing/app/modules/notice_manager.dart';
 import 'package:karing/app/modules/proxy_cluster.dart';
-import 'package:karing/app/modules/remote_config_manager.dart';
 import 'package:karing/app/modules/server_manager.dart';
 import 'package:karing/app/modules/setting_manager.dart';
 import 'package:karing/app/modules/zashboard.dart';
@@ -324,16 +323,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     bool noConfig = ServerManager.getConfig().getServersCount(false) == 0;
     if (noConfig) {
       onTapAddProfileByAgreement();
-    }
-    if (PlatformUtils.isPC()) {
-      var remoteConfig = RemoteConfigManager.getConfig();
-      String url = await UrlLauncherUtils.reorganizationUrlWithAnchor(
-          remoteConfig.tutorial);
-      if (!context.mounted) {
-        return;
-      }
-      await WebviewHelper.loadUrl(context, url, "HSS_guide_done",
-          title: tcontext.SettingsScreen.tutorial);
     }
   }
 

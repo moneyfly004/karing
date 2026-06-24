@@ -32,7 +32,8 @@ class MoneyflySubscription {
     required this.currentDevices,
     required this.expireAt,
     required this.daysRemaining,
-    required this.singboxUrl,
+    required this.subscriptionUrl,
+    this.singboxUrl = '',
     this.packageName = '',
   });
 
@@ -43,12 +44,18 @@ class MoneyflySubscription {
   final int currentDevices;
   final String expireAt;
   final int daysRemaining;
+  final String subscriptionUrl;
   final String singboxUrl;
   final String packageName;
 
-  bool get available => isActive && status == 'active' && singboxUrl.isNotEmpty;
+  bool get available =>
+      isActive && status == 'active' && subscriptionUrl.isNotEmpty;
 
   factory MoneyflySubscription.fromJson(Map<String, dynamic> json) {
+    final subscriptionUrl = _normalizeSubscriptionUrl(
+      (json['token_url'] ?? json['universal_url'] ?? '').toString(),
+      (json['subscription_url'] ?? '').toString(),
+    );
     return MoneyflySubscription(
       id: _asInt(json['id']),
       status: (json['status'] ?? '').toString(),
@@ -57,9 +64,25 @@ class MoneyflySubscription {
       currentDevices: _asInt(json['current_devices']),
       expireAt: (json['expire_at'] ?? '').toString(),
       daysRemaining: _asInt(json['days_remaining']),
+      subscriptionUrl: subscriptionUrl,
       singboxUrl: (json['token_singbox_url'] ?? '').toString(),
       packageName: (json['package_name'] ?? '').toString(),
     );
+  }
+
+  static String _normalizeSubscriptionUrl(String url, String token) {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+      return trimmedUrl;
+    }
+    final rawToken = trimmedUrl.isNotEmpty ? trimmedUrl : token.trim();
+    if (rawToken.isEmpty) {
+      return '';
+    }
+    if (rawToken.startsWith('http://') || rawToken.startsWith('https://')) {
+      return rawToken;
+    }
+    return 'https://new.moneyfly.top/api/v1/client/subscribe?token=${Uri.encodeQueryComponent(rawToken)}';
   }
 }
 

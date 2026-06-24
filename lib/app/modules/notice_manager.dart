@@ -9,6 +9,7 @@ import 'package:karing/app/utils/app_lifecycle_state_notify.dart';
 import 'package:karing/app/modules/remote_config_manager.dart';
 import 'package:karing/app/modules/remote_isp_config_manager.dart';
 import 'package:karing/app/runtime/return_result.dart';
+import 'package:karing/app/modules/remote_config.dart';
 import 'package:karing/app/utils/error_reporter_utils.dart';
 import 'package:karing/app/utils/file_utils.dart';
 import 'package:karing/app/utils/karing_utils.dart';
@@ -72,6 +73,9 @@ class Notice {
     var now = DateTime.now();
     for (var i in its) {
       NoticeItem item = NoticeItem.fromJsonStatic(i);
+      if (item.ispId.isEmpty && RemoteConfig.isKaringHostedUrl(item.url)) {
+        continue;
+      }
       DateTime? et = DateTime.tryParse(item.expireTime);
       DateTime? ut = DateTime.tryParse(item.updateTime);
       if (et != null && now.isAfter(et)) {

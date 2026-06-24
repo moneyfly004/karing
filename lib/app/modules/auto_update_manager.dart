@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:karing/app/local_services/vpn_service.dart';
+import 'package:karing/app/modules/remote_config.dart';
 import 'package:karing/app/modules/setting_manager.dart';
 import 'package:karing/app/runtime/return_result.dart';
 import 'package:karing/app/utils/app_lifecycle_state_notify.dart';
@@ -45,6 +46,9 @@ class AutoUpdateCheckVersion {
     url = map["url"] ?? "";
     fileName = map["file_name"] ?? "";
     force = map["force"] ?? false;
+    if (RemoteConfig.isKaringHostedUrl(url)) {
+      clear();
+    }
   }
 
   static AutoUpdateCheckVersion fromJsonStatic(Map<String, dynamic>? map) {
@@ -270,7 +274,10 @@ class AutoUpdateManager {
         return;
       }
       _duration = const Duration(hours: 3);
-      if (items.data!.isNotEmpty) {
+      if (items.data!.isEmpty) {
+        _versionCheck.clear();
+        saveConfig();
+      } else {
         List<String> abis = VPNService.getABIs();
 
         String channel = await InstallReferrerUtils.getString();

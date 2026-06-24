@@ -9,10 +9,13 @@ class WebviewHelper {
       {String? title,
       bool useInappWebViewForPC = false,
       bool inappWebViewOpenExternal = false}) async {
+    if (url.trim().isEmpty) {
+      return false;
+    }
     if (PlatformUtils.isPC()) {
       if (!useInappWebViewForPC) {
         ReturnResultError? error = await UrlLauncherUtils.loadUrl(url);
-        return error != null;
+        return error == null;
       }
     }
 
@@ -33,7 +36,7 @@ class WebviewHelper {
       return true;
     }
     ReturnResultError? error = await UrlLauncherUtils.loadUrl(url);
-    return error != null;
+    return error == null;
   }
 
   static Future<bool> loadHtml(

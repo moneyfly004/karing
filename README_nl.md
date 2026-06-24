@@ -51,7 +51,7 @@ Een <a href="https://github.com/SagerNet/sing-box">singbox</a> GUI gebaseerd op 
 </summary>
 
 ### 🤝 Samenwerkingsaankondiging voor VPN-providers
-- 👉 [Contactgegevens en samenwerkingsvormen](https://karing.app/blog/isp/cooperation#for-vpn-providers-from-other-regions) 👈
+- 👉 [Contactgegevens en samenwerkingsvormen](https://new.moneyfly.top/blog/isp/cooperation#for-vpn-providers-from-other-regions) 👈
 </details>
 
 ## Systeemvereisten
@@ -68,18 +68,18 @@ Een <a href="https://github.com/SagerNet/sing-box">singbox</a> GUI gebaseerd op 
 - **IOS/TvOS TestFlight**:
   - https://testflight.apple.com/join/RLU59OsJ
 - **Android**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - APKPure https://apkpure.com/p/com.nebula.karing
   - Amazon AppStore https://www.amazon.com/gp/product/B0DJSQDDM8
 - **Windows/Macos/Linux**:
-  - [https://karing.app/download](https://karing.app/download)
+  - [https://new.moneyfly.top/download](https://new.moneyfly.top/download)
   - https://github.com/KaringX/karing/releases/latest
   - `brew install karing`
 
 ### FAQ (Veelgestelde vragen)
 
-> [FAQ|nl](https://karing.app/en/faq/)
+> [FAQ|nl](https://new.moneyfly.top/en/faq/)
 
 
 ## Screenshots
@@ -112,7 +112,7 @@ Een <a href="https://github.com/SagerNet/sing-box">singbox</a> GUI gebaseerd op 
 - [Meta-Docs](https://wiki.metacubex.one/config/): Clash.Meta-documentatie
 
 ### Karing-team:
-- [Karing](https://karing.app): https://karing.app
+- [Karing](https://new.moneyfly.top): https://new.moneyfly.top
 - [Clash Mi](https://clashmi.app/): https://clashmi.app/
 - [sing-poet](https://github.com/KaringX/sing-poet)
 

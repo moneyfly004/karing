@@ -170,6 +170,9 @@ abstract final class AnalyticsUtils {
     }
     _cacheList = [];
     String outpost = RemoteConfigManager.getConfig().outpost;
+    if (outpost.isEmpty) {
+      return;
+    }
     String queryParams1 = AppUrlUtils.getQueryParamsForAnalytics(keys.length);
 
     var body = {"common": cp, "event": keys};
@@ -206,7 +209,7 @@ abstract final class AnalyticsUtils {
           .set(HttpHeaders.contentLengthHeader, bytes.length.toString());
       request.add(bytes);
 
-      HttpClientResponse response = await request.close();
+      await request.close();
       /*X509Certificate? certificate = response.certificate;
       if (certificate != null) {
         String host = RemoteConfigManager.getConfig().host;
