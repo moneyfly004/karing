@@ -621,8 +621,8 @@ class SettingConfigItemDNS {
     enableClientSubnet = map["enable_client_subnet"] ?? true;
     enableInboundDomainResolve = map["enable_inbound_domain_resolve"] ?? false;
     enableStaticIP = map["enable_static_ip"] ?? false;
-    String? _proxyResolveMode = map["proxy_resolve_mode"];
-    if (_proxyResolveMode == null) {
+    String? proxyResolveModeValue = map["proxy_resolve_mode"];
+    if (proxyResolveModeValue == null) {
       do {
         bool enableFakeIp = map["enable_fake_ip"] ?? false;
         if (enableFakeIp) {
@@ -637,13 +637,13 @@ class SettingConfigItemDNS {
           break;
         }
       } while (false);
-    } else if (_proxyResolveMode ==
+    } else if (proxyResolveModeValue ==
         SettingConfigItemDNSProxyResolveMode.proxy.name) {
       proxyResolveMode = SettingConfigItemDNSProxyResolveMode.proxy;
-    } else if (_proxyResolveMode ==
+    } else if (proxyResolveModeValue ==
         SettingConfigItemDNSProxyResolveMode.direct.name) {
       proxyResolveMode = SettingConfigItemDNSProxyResolveMode.direct;
-    } else if (_proxyResolveMode ==
+    } else if (proxyResolveModeValue ==
         SettingConfigItemDNSProxyResolveMode.fakeip.name) {
       proxyResolveMode = SettingConfigItemDNSProxyResolveMode.fakeip;
     } else {
@@ -1084,8 +1084,7 @@ class SettingConfigItemProxy {
     if (clusterPort == 0) {
       clusterPort = clusterPortDefault;
     }
-    autoSetSystemProxy =
-        map["auto_set_system_proxy"] ?? getAutoSetSystemProxyDefault();
+    autoSetSystemProxy = getAutoSetSystemProxyDefault();
     disconnectWhenQuit =
         map["disconnect_when_quit"] ?? getDisconnectWhenQuitDefault();
   }
@@ -1097,9 +1096,6 @@ class SettingConfigItemProxy {
   }
 
   static bool getAutoSetSystemProxyDefault() {
-    if (Platform.isWindows) {
-      return true;
-    }
     return false;
   }
 
@@ -1497,14 +1493,14 @@ class SettingConfig {
     }
 
     proxyAll = map["proxy_all"] ?? false;
-    var _frontProxy = map["front_proxy"];
-    if (_frontProxy is String) {
-      if (_frontProxy.isNotEmpty) {
-        frontProxy.add(_frontProxy);
+    var frontProxyValue = map["front_proxy"];
+    if (frontProxyValue is String) {
+      if (frontProxyValue.isNotEmpty) {
+        frontProxy.add(frontProxyValue);
       }
     } else {
       frontProxy =
-          ConvertUtils.getListStringFromDynamic(_frontProxy, true, [])!;
+          ConvertUtils.getListStringFromDynamic(frontProxyValue, true, [])!;
     }
 
     privateDirect = map["private_direct"] ?? true;

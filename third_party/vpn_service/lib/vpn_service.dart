@@ -456,6 +456,16 @@ class FlutterVpnService {
       return VpnServiceWaitResult.error(
           'service config not found: $coreConfigPath');
     }
+    try {
+      final configSize = await File(coreConfigPath).length();
+      if (configSize == 0) {
+        return VpnServiceWaitResult.error(
+            'service config is empty: $coreConfigPath');
+      }
+    } catch (err) {
+      return VpnServiceWaitResult.error(
+          'service config is not readable: $coreConfigPath: $err');
+    }
 
     await _desktopStop();
     await _desktopKillResidualProcess();
@@ -465,8 +475,8 @@ class FlutterVpnService {
     final stdoutTail = StringBuffer();
     final stderrTail = StringBuffer();
     try {
-      final workDir = config.base_dir.isNotEmpty
-          ? config.base_dir
+      final workDir = File(coreConfigPath).parent.path.isNotEmpty
+          ? File(coreConfigPath).parent.path
           : File(servicePath).parent.path;
       final process = await Process.start(
         servicePath,

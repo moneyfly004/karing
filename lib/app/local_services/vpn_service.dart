@@ -158,7 +158,7 @@ class VPNService {
         "$secondsPadding$seconds";
   }
 
-  static Future<bool> _prepareConfig() async {
+  static Future<ReturnResult<bool>> _prepareConfig() async {
     var proxy = SettingManager.getConfig().proxy;
     var excludePorts = [
       proxy.mixedRulePort,
@@ -170,12 +170,22 @@ class VPNService {
 
     String name = AppUtils.getName();
     String vpnName = name;
+    String profileDir = await PathUtils.profileDir();
+    if (profileDir.isEmpty) {
+      String detail = PathUtils.lastProfileDirError();
+      String message = "profile directory is not writable";
+      if (detail.isNotEmpty) {
+        message = "$message: $detail";
+      }
+      return ReturnResult(error: ReturnResultError(message));
+    }
+
     String configFilePath = await PathUtils.serviceConfigFilePath();
     String installReferrer = await InstallReferrerUtils.getString();
     var setting = SettingManager.getConfig();
     VpnServiceConfig config = VpnServiceConfig();
     config.control_port = setting.proxy.controlPort;
-    config.base_dir = await PathUtils.profileDir();
+    config.base_dir = profileDir;
     config.work_dir = PathUtils.appAssetsDir();
     config.cache_dir = await PathUtils.cacheDir();
     config.core_path = await PathUtils.serviceCoreConfigFilePath();
@@ -191,16 +201,20 @@ class VPNService {
     config.time_connect = durationToString(setting.timeConnect);
     config.time_disconnect = durationToString(setting.timeDisconnect);
     config.sentry_minversion = RemoteConfigManager.getConfig().sentryMinVersion;
-    FlutterVpnService.prepareConfig(
-      config: config,
-      tunnelServicePath: PathUtils.serviceExePath(),
-      configFilePath: configFilePath,
-      systemExtension: _useSystemExtension,
-      bundleIdentifier: getBundleId(),
-      uiServerAddress: name,
-      uiLocalizedDescription: vpnName,
-      excludePorts: excludePorts,
-    );
+    try {
+      await FlutterVpnService.prepareConfig(
+        config: config,
+        tunnelServicePath: PathUtils.serviceExePath(),
+        configFilePath: configFilePath,
+        systemExtension: _useSystemExtension,
+        bundleIdentifier: getBundleId(),
+        uiServerAddress: name,
+        uiLocalizedDescription: vpnName,
+        excludePorts: excludePorts,
+      );
+    } catch (err) {
+      return ReturnResult(error: ReturnResultError(err.toString()));
+    }
     File confFile = File(configFilePath);
     bool reinstall = false;
     if (Platform.isIOS || Platform.isMacOS) {
@@ -228,13 +242,20 @@ class VPNService {
       await confFile.writeAsString(content, flush: true);
     } catch (err) {
       ErrorReporterUtils.tryReportNoSpace(err.toString());
+      return ReturnResult(error: ReturnResultError(err.toString()));
+    }
+
+    if (!await confFile.exists()) {
+      return ReturnResult(
+          error:
+              ReturnResultError("service config not created: $configFilePath"));
     }
 
     if (Platform.isMacOS) {
       ProxyManager().setExcludeDevices({vpnName});
     }
 
-    return reinstall;
+    return ReturnResult(data: reinstall);
   }
 
   static Duration getTimeoutByOutboundCount(int count, bool tunMode) {
@@ -270,7 +291,11 @@ class VPNService {
     if (!started) {
       return null;
     }
-    bool reinstall = await _prepareConfig();
+    ReturnResult<bool> prepareResult = await _prepareConfig();
+    if (prepareResult.error != null) {
+      return prepareResult.error;
+    }
+    bool reinstall = prepareResult.data == true;
     if (reinstall) {
       await uninstall();
     }
@@ -335,7 +360,11 @@ class VPNService {
   }
 
   static Future<ReturnResultError?> start(Duration timeout) async {
-    bool reinstall = await _prepareConfig();
+    ReturnResult<bool> prepareResult = await _prepareConfig();
+    if (prepareResult.error != null) {
+      return prepareResult.error;
+    }
+    bool reinstall = prepareResult.data == true;
     if (reinstall) {
       await uninstall();
     }
@@ -389,11 +418,6 @@ class VPNService {
       if (setting.alwayOn) {
         await FlutterVpnService.setAlwaysOn(setting.alwayOn);
       }
-    }
-
-    var proxy = SettingManager.getConfig().proxy;
-    if (proxy.autoSetSystemProxy) {
-      await setSystemProxy(true);
     }
 
     return null;

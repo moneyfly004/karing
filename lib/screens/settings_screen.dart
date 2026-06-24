@@ -6,7 +6,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:karing/app/extension/colors.dart';
 import 'package:karing/app/local_services/vpn_service.dart';
 import 'package:karing/app/modules/auto_update_manager.dart';
 import 'package:karing/app/modules/biz.dart';
@@ -43,7 +42,6 @@ import 'package:karing/screens/group_screen.dart';
 import 'package:karing/screens/inapp_webview_screen.dart';
 import 'package:karing/screens/language_settings_screen.dart';
 import 'package:karing/screens/list_add_screen.dart';
-import 'package:karing/screens/my_profiles_screen.dart';
 import 'package:karing/screens/net_interfaces_screen.dart';
 import 'package:karing/screens/perapp_android_screen.dart';
 import 'package:karing/screens/perapp_macos_screen.dart';
@@ -783,14 +781,6 @@ class _SettingScreenState extends LasyRenderingState<SettingsScreen> {
             setState(() {});
           },
         )),
-        GroupItemOptions(
-            switchOptions: GroupItemSwitchOptions(
-                name: tcontext.SettingsScreen.autoSetSystemProxy,
-                switchValue: settingConfig.proxy.autoSetSystemProxy,
-                onSwitch: (bool value) async {
-                  settingConfig.proxy.autoSetSystemProxy = value;
-                  setState(() {});
-                })),
         PlatformUtils.isPC()
             ? GroupItemOptions(
                 switchOptions: GroupItemSwitchOptions(
@@ -2331,28 +2321,14 @@ class _SettingScreenState extends LasyRenderingState<SettingsScreen> {
         GroupItemOptions(
             switchOptions: GroupItemSwitchOptions(
                 name: tcontext.SettingsScreen.allowOtherHostsConnect,
-                // ignore: prefer_interpolation_to_compose_strings
-                tips: (settingConfig.proxy.getAllowAllInbounds()
-                        ? ipInterface
-                        : ipLocal) +
-                    "\n" +
-                    tcontext.SettingsScreen.portSettingRule +
-                    ":" +
-                    tcontext.SettingsScreen.allowOtherHostsConnectTips(
-                        hp: settingConfig.proxy.mixedRulePort,
-                        sp: settingConfig.proxy.mixedRulePort) +
-                    "\n" +
-                    tcontext.SettingsScreen.portSettingDirectAll +
-                    ":" +
-                    tcontext.SettingsScreen.allowOtherHostsConnectTips(
-                        hp: settingConfig.proxy.mixedDirectPort,
-                        sp: settingConfig.proxy.mixedDirectPort) +
-                    "\n" +
-                    tcontext.SettingsScreen.portSettingProxyAll +
-                    ":" +
-                    tcontext.SettingsScreen.allowOtherHostsConnectTips(
-                        hp: settingConfig.proxy.mixedForwordPort,
-                        sp: settingConfig.proxy.mixedForwordPort),
+                tips:
+                    '${settingConfig.proxy.getAllowAllInbounds() ? ipInterface : ipLocal}\n'
+                    '${tcontext.SettingsScreen.portSettingRule}:'
+                    '${tcontext.SettingsScreen.allowOtherHostsConnectTips(hp: settingConfig.proxy.mixedRulePort, sp: settingConfig.proxy.mixedRulePort)}\n'
+                    '${tcontext.SettingsScreen.portSettingDirectAll}:'
+                    '${tcontext.SettingsScreen.allowOtherHostsConnectTips(hp: settingConfig.proxy.mixedDirectPort, sp: settingConfig.proxy.mixedDirectPort)}\n'
+                    '${tcontext.SettingsScreen.portSettingProxyAll}:'
+                    '${tcontext.SettingsScreen.allowOtherHostsConnectTips(hp: settingConfig.proxy.mixedForwordPort, sp: settingConfig.proxy.mixedForwordPort)}',
                 switchValue: settingConfig.proxy.getAllowAllInbounds(),
                 onSwitch: (bool value) async {
                   settingConfig.proxy.setAllowAllInbounds(value);
