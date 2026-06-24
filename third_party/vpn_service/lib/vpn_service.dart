@@ -468,7 +468,7 @@ class FlutterVpnService {
         servicePath,
         ['run', '-c', coreConfigPath],
         workingDirectory: workDir,
-        mode: ProcessStartMode.detachedWithStdio,
+        mode: ProcessStartMode.normal,
       );
       _desktopProcess!.stdout.transform(utf8.decoder).listen((_) {});
       _desktopProcess!.stderr.transform(utf8.decoder).listen((_) {});
