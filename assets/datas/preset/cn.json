@@ -1,0 +1,310 @@
+{
+    "rules": [
+        {
+            "rule_set_build_in": [
+                "acl:BanAD",
+                "geosite:category-ads"
+            ],
+            "outbound": "block",
+            "name": "🛑 广告拦截",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:BanProgramAD",
+                "acl:BanADCompany"
+            ],
+            "outbound": "block",
+            "name": "🍃 应用净化",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:malware",
+                "geoip:malware",
+                "geoip:phishing",
+                "geosite:phishing",
+                "geosite:cryptominers"
+            ],
+            "outbound": "block",
+            "name": "🛑 恶意软件",
+            "switch": false
+        },
+        {
+            "domain_suffix": [
+                "push.apple.com",
+                "akadns.net"
+            ],
+            "domain_keyword": [
+                "apple.com.edgekey.net"
+            ],
+            "ip_cidr": [
+                "17.249.0.0/16",
+                "17.252.0.0/16",
+                "17.57.144.0/22",
+                "17.188.128.0/18",
+                "17.188.20.0/23",
+                "2620:149:a44::/48",
+                "2403:300:a42::/48",
+                "2403:300:a51::/48",
+                "2a01:b740:a42::/48"
+            ],
+            "outbound": "currentSelected",
+            "name": "📢 苹果推送通知",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:apple",
+                "geosite:apple@ads",
+                "geosite:apple-dev",
+                "geosite:apple-pki",
+                "geosite:apple-update"
+            ],
+            "outbound": "direct",
+            "name": "🍎 苹果服务",
+            "switch": true
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:youtube"
+            ],
+            "package": [
+                "com.google.android.youtube"
+            ],
+            "outbound": "currentSelected",
+            "name": "📹 油管视频",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:Gemini"
+            ],
+            "outbound": "currentSelected",
+            "name": "♊️ Google Gemini",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:google-play"
+            ],
+            "package": [
+                "com.android.vending"
+            ],
+            "outbound": "currentSelected",
+            "name": "🌏 Google Play",
+            "switch": true
+        },
+        {
+            "rule_set_build_in": [
+                "acl:GoogleFCM"
+            ],
+            "outbound": "direct",
+            "name": "📢 Google FCM",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:google",
+                "geoip:google"
+            ],
+            "outbound": "currentSelected",
+            "name": "🌏 Google",
+            "switch": true
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:facebook-dev",
+                "geosite:facebook",
+                "geosite:facebook@ads",
+                "geoip:facebook",
+                "acl:Facebook"
+            ],
+            "outbound": "currentSelected",
+            "name": "📲 Facebook",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:x",
+                "geosite:x@ads",
+                "geoip:twitter",
+                "acl:Twitter"
+            ],
+            "outbound": "currentSelected",
+            "name": "📲 X",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:tiktok"
+            ],
+            "outbound": "currentSelected",
+            "name": "🎧 TikTok",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:instagram"
+            ],
+            "outbound": "currentSelected",
+            "name": "📸 Instagram",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geoip:netflix",
+                "geosite:netflix"
+            ],
+            "outbound": "currentSelected",
+            "name": "🎥 奈飞视频",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:whatsapp",
+                "acl:Whatsapp"
+            ],
+            "package": [
+                "com.whatsapp"
+            ],
+            "processName": [
+                "WhatsApp.exe",
+                "WhatsApp"
+            ],
+            "outbound": "currentSelected",
+            "name": "📲 WhatsApp",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geoip:telegram",
+                "geosite:telegram"
+            ],
+            "package": [
+                "org.telegram.messenger.web",
+                "org.telegram.messenger"
+            ],
+            "processName": [
+                "Telegram.exe",
+                "Telegram"
+            ],
+            "outbound": "currentSelected",
+            "name": "📲 电报消息",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:Claude"
+            ],
+            "outbound": "currentSelected",
+            "name": "💬 Claude",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geoip:openai",
+                "geosite:openai"
+            ],
+            "outbound": "currentSelected",
+            "name": "💬 OpenAI",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geoip:github",
+                "geosite:github"
+            ],
+            "processName": [
+                "GitHubDesktop.exe",
+                "GitHub Desktop Helper",
+                "GitHub Desktop"
+            ],
+            "outbound": "currentSelected",
+            "name": "🐱 GitHub",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geoip:bing",
+                "geosite:bing"
+            ],
+            "outbound": "currentSelected",
+            "name": "Ⓜ️ 微软Bing",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:onedrive"
+            ],
+            "outbound": "direct",
+            "name": "Ⓜ️ 微软云盘",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:microsoft",
+                "geosite:microsoft-dev",
+                "geosite:microsoft-pki"
+            ],
+            "outbound": "currentSelected",
+            "name": "Ⓜ️ 微软服务",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:Epic",
+                "acl:Origin",
+                "acl:Sony",
+                "acl:Steam",
+                "acl:Nintendo"
+            ],
+            "outbound": "currentSelected",
+            "name": "🎮 游戏平台",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:BilibiliHMT",
+                "acl:Bilibili"
+            ],
+            "outbound": "direct",
+            "name": "📺 哔哩哔哩",
+            "switch": true
+        },
+        {
+            "rule_set_build_in": [
+                "acl:NetEaseMusic"
+            ],
+            "outbound": "direct",
+            "name": "🎶 网易音乐",
+            "switch": false
+        },
+        {
+            "rule_set_build_in": [
+                "acl:ChinaIp",
+                "acl:ChinaDomain",
+                "acl:ChinaCompanyIp",
+                "acl:UnBan",
+                "acl:SteamCN",
+                "acl:Download",
+                "acl:ChinaMedia"
+            ],
+            "outbound": "direct",
+            "name": "🎯 国内直连",
+            "switch": true
+        },
+        {
+            "rule_set_build_in": [
+                "geosite:geolocation-!cn",
+                "geosite:google",
+                "geoip:google",
+                "acl:ProxyGFWlist",
+                "acl:ProxyMedia"
+            ],
+            "outbound": "currentSelected",
+            "name": "🌏 国外穿墙",
+            "switch": true
+        }
+    ]
+}

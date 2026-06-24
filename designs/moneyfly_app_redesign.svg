@@ -1,0 +1,538 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="2860" viewBox="0 0 1840 2860">
+  <defs>
+    <style>
+      .board { fill: #eef1f4; }
+      .label { font: 700 22px "Avenir Next", "Helvetica Neue", sans-serif; fill: #15202b; }
+      .phone { fill: #f7f8fa; stroke: #c9d1d9; stroke-width: 1.2; }
+      .top { fill: #ffffff; stroke: #e0e5ea; stroke-width: 1; }
+      .card { fill: #ffffff; stroke: #e2e7ed; stroke-width: 1; }
+      .card-soft { fill: #f1f5f8; stroke: #dce4ec; stroke-width: 1; }
+      .ink { fill: #121820; font-family: "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; }
+      .muted { fill: #657282; font-family: "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; }
+      .tiny { font-size: 11px; }
+      .small { font-size: 13px; }
+      .body { font-size: 15px; }
+      .title { font: 700 22px "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; fill: #121820; }
+      .h2 { font: 700 18px "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; fill: #121820; }
+      .num { font: 700 24px "Avenir Next", "Helvetica Neue", sans-serif; fill: #121820; }
+      .mono { font: 700 14px "Avenir Next", "Helvetica Neue", sans-serif; fill: #121820; }
+      .blue { fill: #1769d4; }
+      .green { fill: #18a66a; }
+      .red { fill: #dd4b39; }
+      .amber { fill: #d98a12; }
+      .line { stroke: #dce4ec; stroke-width: 1; }
+      .btn-blue { fill: #1769d4; }
+      .btn-green { fill: #18a66a; }
+      .btn-dark { fill: #1d2733; }
+      .chip { fill: #edf4ff; stroke: #c8dcff; stroke-width: 1; }
+      .chip-green { fill: #e8f7ef; stroke: #c7ead7; stroke-width: 1; }
+      .chip-amber { fill: #fff3df; stroke: #f0d7ab; stroke-width: 1; }
+      .shadow { filter: drop-shadow(0 12px 22px rgba(33, 42, 54, .08)); }
+      .panel-title { font: 700 15px "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; fill: #121820; }
+      .page-title { font: 700 20px "STHeiti", "PingFang SC", "Helvetica Neue", sans-serif; fill: #121820; }
+    </style>
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4 1a8 8 0 0 0-2-1.1L14 3h-4l-.5 2.7a8 8 0 0 0-2 1.1l-2.4-1-2 3.5 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-1a8 8 0 0 0 2 1.1L10 21h4l.5-2.7a8 8 0 0 0 2-1.1l2.4 1 2-3.5-2-1.5c.1-.4.1-.8.1-1.2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-edit" viewBox="0 0 24 24">
+      <path d="M4 16.5V20h3.5L18.2 9.3l-3.5-3.5L4 16.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="m13.8 6.7 3.5 3.5" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24">
+      <path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.3 4.3L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-server" viewBox="0 0 24 24">
+      <rect x="4" y="4" width="16" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="4" y="14" width="16" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="8" cy="7" r="1" fill="currentColor"/>
+      <circle cx="8" cy="17" r="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="icon-device" viewBox="0 0 24 24">
+      <rect x="5" y="3" width="14" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="icon-card" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M3 10h18" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24">
+      <path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1.2 1.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+
+  <rect class="board" width="1840" height="2860"/>
+  <text x="56" y="48" class="label">MoneyFly VPN App Redesign - SVG UI Draft</text>
+  <text x="56" y="76" class="muted small">范围：账号入口、自动配置、连接与测速、套餐购买、设备管理、设置清理、主页信息自定义。</text>
+
+  <!-- Screen 1: Login -->
+  <g transform="translate(56 118)">
+    <text x="0" y="-22" class="label">01 登录</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <circle cx="195" cy="96" r="34" fill="#1769d4"/>
+    <path d="M178 100c18-24 41-29 53-13-17-4-31 3-44 22-5-3-7-5-9-9Z" fill="#fff"/>
+    <text x="54" y="165" class="title">MoneyFly</text>
+    <text x="54" y="194" class="muted body">登录后自动同步订阅与安全配置</text>
+    <rect x="36" y="236" width="318" height="54" rx="8" class="card-soft"/>
+    <text x="56" y="258" class="muted tiny">邮箱 / 用户名</text>
+    <text x="56" y="280" class="ink body">user@example.com</text>
+    <rect x="36" y="306" width="318" height="54" rx="8" class="card-soft"/>
+    <text x="56" y="328" class="muted tiny">密码</text>
+    <text x="56" y="350" class="ink body">••••••••••</text>
+    <rect x="36" y="384" width="318" height="52" rx="26" class="btn-blue"/>
+    <text x="195" y="417" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="STHeiti, PingFang SC">登录</text>
+    <text x="96" y="470" class="blue body">注册账号</text>
+    <text x="220" y="470" class="blue body">忘记密码</text>
+    <rect x="36" y="548" width="318" height="92" rx="8" fill="#eef7f2" stroke="#c9ead9"/>
+    <text x="56" y="578" class="green panel-title">自动登录</text>
+    <text x="56" y="604" class="muted small">打开软件自动登录并同步配置。</text>
+    <text x="56" y="626" class="muted small">退出账号后删除本机配置和登录状态。</text>
+    <rect x="36" y="716" width="318" height="44" rx="8" fill="#ffffff" stroke="#e2e7ed"/>
+    <text x="56" y="744" class="muted small">安全服务已启用</text>
+  </g>
+
+  <!-- Screen 2: Register -->
+  <g transform="translate(502 118)">
+    <text x="0" y="-22" class="label">02 注册</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">创建账号</text>
+    <text x="36" y="96" class="muted body">邮箱验证码必填，邀请码可选。</text>
+    <rect x="36" y="132" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="162" class="ink body">用户名</text>
+    <rect x="36" y="192" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="222" class="ink body">邮箱</text>
+    <rect x="36" y="252" width="204" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="282" class="ink body">验证码</text>
+    <rect x="250" y="252" width="104" height="48" rx="24" class="btn-dark"/>
+    <text x="302" y="282" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">发送</text>
+    <rect x="36" y="312" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="342" class="ink body">密码</text>
+    <rect x="36" y="372" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="402" class="ink body">邀请码（选填）</text>
+    <rect x="36" y="454" width="318" height="52" rx="26" class="btn-blue"/>
+    <text x="195" y="487" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="STHeiti, PingFang SC">注册并登录</text>
+    <rect x="36" y="548" width="318" height="110" rx="8" fill="#fff7e8" stroke="#efd6a9"/>
+    <text x="56" y="579" class="amber panel-title">验证码流程</text>
+    <text x="56" y="605" class="muted small">验证码发送到邮箱后，请在有效期内完成注册。</text>
+    <text x="56" y="628" class="muted small">注册成功后会自动同步订阅与配置。</text>
+  </g>
+
+  <!-- Screen 3: Forgot Password -->
+  <g transform="translate(948 118)">
+    <text x="0" y="-22" class="label">03 忘记密码</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">重置密码</text>
+    <rect x="36" y="112" width="318" height="128" rx="8" fill="#eef4ff" stroke="#c9dcff"/>
+    <text x="56" y="145" class="blue panel-title">邮箱验证</text>
+    <text x="56" y="172" class="muted small">输入注册邮箱，获取一次性验证码后设置新密码。</text>
+    <text x="56" y="198" class="muted small">验证码过期后需要重新发送。</text>
+    <rect x="36" y="276" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="306" class="ink body">邮箱</text>
+    <rect x="36" y="336" width="204" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="366" class="ink body">验证码</text>
+    <rect x="250" y="336" width="104" height="48" rx="24" class="btn-dark"/>
+    <text x="302" y="366" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">发送</text>
+    <rect x="36" y="396" width="318" height="48" rx="8" class="card-soft"/>
+    <text x="54" y="426" class="ink body">新密码</text>
+    <rect x="36" y="478" width="318" height="52" rx="26" class="btn-blue"/>
+    <text x="195" y="511" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="STHeiti, PingFang SC">确认重置</text>
+    <text x="116" y="570" class="blue body">返回登录</text>
+  </g>
+
+  <!-- Screen 4: Home disconnected -->
+  <g transform="translate(1394 118)">
+    <text x="0" y="-22" class="label">04 首页 - 未连接</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#f7f8fa"/>
+    <rect x="18" y="16" width="354" height="70" rx="24" class="top"/>
+    <use href="#icon-settings" x="36" y="38" width="24" height="24" color="#121820"/>
+    <text x="78" y="57" class="page-title">MoneyFly</text>
+    <use href="#icon-edit" x="320" y="38" width="24" height="24" color="#1769d4"/>
+    <rect x="36" y="104" width="318" height="116" rx="8" class="card"/>
+    <text x="56" y="135" class="panel-title">alice@example.com</text>
+    <rect x="248" y="119" width="82" height="26" rx="13" class="chip-green"/>
+    <text x="289" y="137" text-anchor="middle" class="green small">有效</text>
+    <text x="56" y="166" class="muted small">到期时间</text>
+    <text x="56" y="194" class="mono">2026-12-31</text>
+    <text x="196" y="166" class="muted small">设备</text>
+    <text x="196" y="194" class="mono">2 / 5</text>
+    <rect x="36" y="236" width="318" height="62" rx="8" class="card"/>
+    <rect x="52" y="252" width="86" height="30" rx="15" class="btn-blue"/>
+    <text x="95" y="272" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">规则</text>
+    <rect x="148" y="252" width="86" height="30" rx="15" fill="#eff3f7" stroke="#dce4ec"/>
+    <text x="191" y="272" text-anchor="middle" class="muted small">全局</text>
+    <rect x="244" y="252" width="86" height="30" rx="15" fill="#eff3f7" stroke="#dce4ec"/>
+    <text x="287" y="272" text-anchor="middle" class="muted small">直连</text>
+    <circle cx="195" cy="407" r="78" fill="#ffffff" stroke="#dce4ec" stroke-width="10"/>
+    <circle cx="195" cy="407" r="55" fill="#1769d4"/>
+    <use href="#icon-link" x="171" y="383" width="48" height="48" color="#ffffff"/>
+    <text x="195" y="508" text-anchor="middle" class="h2">连接</text>
+    <rect x="36" y="548" width="318" height="64" rx="8" class="card"/>
+    <use href="#icon-server" x="54" y="568" width="24" height="24" color="#1769d4"/>
+    <text x="90" y="575" class="muted tiny">默认节点</text>
+    <text x="90" y="598" class="ink body">自动选择最快节点</text>
+    <text x="312" y="588" class="blue body">选择</text>
+    <rect x="36" y="632" width="150" height="72" rx="8" class="card"/>
+    <text x="52" y="659" class="muted tiny">运行时长</text>
+    <text x="52" y="689" class="num">00:00</text>
+    <rect x="204" y="632" width="150" height="72" rx="8" class="card"/>
+    <text x="220" y="659" class="muted tiny">实时速度</text>
+    <text x="220" y="689" class="num">0 KB/s</text>
+    <rect x="36" y="720" width="150" height="72" rx="8" class="card"/>
+    <text x="52" y="747" class="muted tiny">总流量</text>
+    <text x="52" y="777" class="num">12.8G</text>
+    <rect x="204" y="720" width="150" height="72" rx="8" class="card"/>
+    <text x="220" y="747" class="muted tiny">出口 IP</text>
+    <text x="220" y="777" class="num">--</text>
+  </g>
+
+  <!-- Screen 5: Home testing -->
+  <g transform="translate(56 1062)">
+    <text x="0" y="-22" class="label">05 首页 - 连接后自动测速</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#f7f8fa"/>
+    <rect x="18" y="16" width="354" height="70" rx="24" class="top"/>
+    <use href="#icon-settings" x="36" y="38" width="24" height="24" color="#121820"/>
+    <text x="78" y="57" class="page-title">MoneyFly</text>
+    <use href="#icon-edit" x="320" y="38" width="24" height="24" color="#1769d4"/>
+    <rect x="36" y="104" width="318" height="94" rx="8" fill="#eef7f2" stroke="#c7ead7"/>
+    <text x="56" y="135" class="green panel-title">正在同步最新配置</text>
+    <text x="56" y="162" class="muted small">登录状态有效，配置已加密保存。</text>
+    <rect x="36" y="216" width="318" height="62" rx="8" class="card"/>
+    <rect x="52" y="232" width="86" height="30" rx="15" class="btn-blue"/>
+    <text x="95" y="252" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">规则</text>
+    <rect x="148" y="232" width="86" height="30" rx="15" fill="#eff3f7" stroke="#dce4ec"/>
+    <text x="191" y="252" text-anchor="middle" class="muted small">全局</text>
+    <rect x="244" y="232" width="86" height="30" rx="15" fill="#eff3f7" stroke="#dce4ec"/>
+    <text x="287" y="252" text-anchor="middle" class="muted small">直连</text>
+    <circle cx="195" cy="392" r="86" fill="#ffffff" stroke="#cbe4d7" stroke-width="10"/>
+    <path d="M195 306a86 86 0 0 1 81 57" fill="none" stroke="#18a66a" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="195" cy="392" r="58" fill="#18a66a"/>
+    <use href="#icon-check" x="171" y="368" width="48" height="48" color="#ffffff"/>
+    <text x="195" y="505" text-anchor="middle" class="h2">已连接，正在测速</text>
+    <text x="195" y="531" text-anchor="middle" class="muted small">测试 6 个节点，完成后自动切换最快节点</text>
+    <rect x="36" y="560" width="318" height="86" rx="8" class="card"/>
+    <text x="56" y="591" class="panel-title">节点测速</text>
+    <rect x="56" y="612" width="278" height="8" rx="4" fill="#e1e8ef"/>
+    <rect x="56" y="612" width="184" height="8" rx="4" fill="#18a66a"/>
+    <text x="56" y="637" class="muted small">当前最快：香港 02 · 42 ms</text>
+    <rect x="36" y="664" width="150" height="72" rx="8" class="card"/>
+    <text x="52" y="691" class="muted tiny">运行时长</text>
+    <text x="52" y="721" class="num">00:14</text>
+    <rect x="204" y="664" width="150" height="72" rx="8" class="card"/>
+    <text x="220" y="691" class="muted tiny">实时速度</text>
+    <text x="220" y="721" class="num">1.8M/s</text>
+    <rect x="36" y="752" width="318" height="40" rx="8" class="card-soft"/>
+    <text x="56" y="777" class="muted small">旧配置更新时自动替换，不显示订阅内容。</text>
+  </g>
+
+  <!-- Screen 6: Home connected -->
+  <g transform="translate(502 1062)">
+    <text x="0" y="-22" class="label">06 首页 - 已连接</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#f7f8fa"/>
+    <rect x="18" y="16" width="354" height="70" rx="24" class="top"/>
+    <use href="#icon-settings" x="36" y="38" width="24" height="24" color="#121820"/>
+    <text x="78" y="57" class="page-title">MoneyFly</text>
+    <use href="#icon-edit" x="320" y="38" width="24" height="24" color="#1769d4"/>
+    <rect x="36" y="104" width="318" height="116" rx="8" class="card"/>
+    <text x="56" y="135" class="panel-title">标准套餐</text>
+    <text x="56" y="164" class="muted small">alice@example.com</text>
+    <rect x="248" y="119" width="82" height="26" rx="13" class="chip-green"/>
+    <text x="289" y="137" text-anchor="middle" class="green small">已连接</text>
+    <text x="56" y="198" class="muted small">剩余 191 天</text>
+    <text x="196" y="198" class="muted small">设备 2/5</text>
+    <circle cx="195" cy="352" r="82" fill="#ffffff" stroke="#cbe4d7" stroke-width="10"/>
+    <circle cx="195" cy="352" r="56" fill="#18a66a"/>
+    <use href="#icon-x" x="171" y="328" width="48" height="48" color="#ffffff"/>
+    <text x="195" y="462" text-anchor="middle" class="h2">断开连接</text>
+    <rect x="36" y="500" width="318" height="64" rx="8" class="card"/>
+    <use href="#icon-server" x="54" y="520" width="24" height="24" color="#18a66a"/>
+    <text x="90" y="527" class="muted tiny">当前节点</text>
+    <text x="90" y="550" class="ink body">香港 02 · 42 ms</text>
+    <text x="306" y="540" class="blue body">更换</text>
+    <rect x="36" y="584" width="150" height="72" rx="8" class="card"/>
+    <text x="52" y="611" class="muted tiny">运行时长</text>
+    <text x="52" y="641" class="num">02:18</text>
+    <rect x="204" y="584" width="150" height="72" rx="8" class="card"/>
+    <text x="220" y="611" class="muted tiny">实时速度</text>
+    <text x="220" y="641" class="num">8.6M/s</text>
+    <rect x="36" y="672" width="150" height="72" rx="8" class="card"/>
+    <text x="52" y="699" class="muted tiny">总流量</text>
+    <text x="52" y="729" class="num">18.4G</text>
+    <rect x="204" y="672" width="150" height="72" rx="8" class="card"/>
+    <text x="220" y="699" class="muted tiny">出口 IP</text>
+    <text x="220" y="729" class="num">HK</text>
+    <rect x="36" y="760" width="318" height="32" rx="8" class="card-soft"/>
+    <text x="56" y="781" class="muted tiny">主页信息卡可在右上角编辑按钮中选择显示。</text>
+  </g>
+
+  <!-- Screen 7: Node selection -->
+  <g transform="translate(948 1062)">
+    <text x="0" y="-22" class="label">07 节点选择</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">选择节点</text>
+    <rect x="278" y="34" width="76" height="32" rx="16" class="btn-blue"/>
+    <text x="316" y="55" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">测速</text>
+    <rect x="36" y="92" width="318" height="44" rx="8" class="card-soft"/>
+    <text x="56" y="120" class="muted small">搜索节点或国家地区</text>
+    <rect x="36" y="156" width="318" height="52" rx="8" class="chip-green"/>
+    <text x="56" y="188" class="green panel-title">自动选择最快节点</text>
+    <use href="#icon-check" x="318" y="170" width="22" height="22" color="#18a66a"/>
+    <g transform="translate(36 226)">
+      <rect width="318" height="64" rx="8" class="card"/>
+      <text x="18" y="28" class="panel-title">香港 02</text>
+      <text x="18" y="50" class="muted small">已选 · 推荐</text>
+      <text x="246" y="39" class="green mono">42 ms</text>
+    </g>
+    <g transform="translate(36 302)">
+      <rect width="318" height="64" rx="8" class="card"/>
+      <text x="18" y="28" class="panel-title">日本 01</text>
+      <text x="18" y="50" class="muted small">东京 · 负载低</text>
+      <text x="246" y="39" class="green mono">58 ms</text>
+    </g>
+    <g transform="translate(36 378)">
+      <rect width="318" height="64" rx="8" class="card"/>
+      <text x="18" y="28" class="panel-title">新加坡 03</text>
+      <text x="18" y="50" class="muted small">Netflix · 普通</text>
+      <text x="246" y="39" class="amber mono">96 ms</text>
+    </g>
+    <g transform="translate(36 454)">
+      <rect width="318" height="64" rx="8" class="card"/>
+      <text x="18" y="28" class="panel-title">美国 01</text>
+      <text x="18" y="50" class="muted small">洛杉矶 · 高带宽</text>
+      <text x="238" y="39" class="amber mono">142 ms</text>
+    </g>
+    <g transform="translate(36 530)">
+      <rect width="318" height="64" rx="8" class="card"/>
+      <text x="18" y="28" class="panel-title">香港 01</text>
+      <text x="18" y="50" class="muted small">上次失败</text>
+      <text x="246" y="39" class="red mono">超时</text>
+    </g>
+    <rect x="36" y="720" width="318" height="72" rx="8" fill="#fff7e8" stroke="#efd6a9"/>
+    <text x="56" y="750" class="amber panel-title">默认逻辑</text>
+    <text x="56" y="775" class="muted small">连接后自动测速，并切换到最快可用节点。</text>
+  </g>
+
+  <!-- Screen 8: Purchase plans -->
+  <g transform="translate(1394 1062)">
+    <text x="0" y="-22" class="label">08 套餐购买</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">套餐购买</text>
+    <rect x="36" y="92" width="318" height="88" rx="8" class="card"/>
+    <text x="56" y="123" class="panel-title">当前套餐</text>
+    <text x="56" y="150" class="muted small">标准套餐 · 到期 2026-12-31 · 设备 2/5</text>
+    <text x="56" y="171" class="blue small">支持续费、升级或购买新套餐</text>
+    <g transform="translate(36 204)">
+      <rect width="318" height="128" rx="8" fill="#eef4ff" stroke="#c9dcff"/>
+      <text x="20" y="32" class="blue panel-title">标准套餐</text>
+      <text x="20" y="62" class="num">¥ 98</text>
+      <text x="108" y="62" class="muted small">/ 30 天</text>
+      <text x="20" y="92" class="muted small">5 台设备 · 常用节点 · 自动测速</text>
+      <rect x="222" y="78" width="76" height="34" rx="17" class="btn-blue"/>
+      <text x="260" y="100" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">购买</text>
+    </g>
+    <g transform="translate(36 348)">
+      <rect width="318" height="128" rx="8" class="card"/>
+      <text x="20" y="32" class="panel-title">高级套餐</text>
+      <text x="20" y="62" class="num">¥ 188</text>
+      <text x="118" y="62" class="muted small">/ 90 天</text>
+      <text x="20" y="92" class="muted small">8 台设备 · 高速节点 · 优先线路</text>
+      <rect x="222" y="78" width="76" height="34" rx="17" class="btn-dark"/>
+      <text x="260" y="100" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">购买</text>
+    </g>
+    <g transform="translate(36 492)">
+      <rect width="318" height="128" rx="8" class="card"/>
+      <text x="20" y="32" class="panel-title">企业套餐</text>
+      <text x="20" y="62" class="num">¥ 398</text>
+      <text x="118" y="62" class="muted small">/ 180 天</text>
+      <text x="20" y="92" class="muted small">20 台设备 · 专线节点 · 团队使用</text>
+      <rect x="222" y="78" width="76" height="34" rx="17" class="btn-dark"/>
+      <text x="260" y="100" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">购买</text>
+    </g>
+    <rect x="36" y="648" width="318" height="144" rx="8" class="card"/>
+    <text x="56" y="680" class="panel-title">支付方式</text>
+    <rect x="56" y="700" width="128" height="36" rx="18" class="chip-green"/>
+    <text x="120" y="723" text-anchor="middle" class="green small">余额支付</text>
+    <rect x="194" y="700" width="74" height="36" rx="18" class="chip"/>
+    <text x="231" y="723" text-anchor="middle" class="blue small">支付宝</text>
+    <rect x="276" y="700" width="58" height="36" rx="18" class="chip"/>
+    <text x="305" y="723" text-anchor="middle" class="blue small">微信</text>
+    <rect x="56" y="748" width="278" height="30" rx="15" class="btn-blue"/>
+    <text x="195" y="768" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="STHeiti, PingFang SC">创建订单并支付</text>
+  </g>
+
+  <!-- Screen 9: Payment WebView -->
+  <g transform="translate(56 2006)">
+    <text x="0" y="-22" class="label">09 App 内支付 WebView</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">订单支付</text>
+    <rect x="36" y="86" width="318" height="76" rx="8" class="card"/>
+    <text x="56" y="116" class="panel-title">ORD1750759812A9</text>
+    <text x="56" y="143" class="muted small">标准套餐 · ¥98.00 · 支付宝</text>
+    <rect x="36" y="184" width="318" height="438" rx="8" fill="#ffffff" stroke="#dce4ec"/>
+    <rect x="50" y="198" width="290" height="34" rx="6" fill="#eef1f4"/>
+    <text x="66" y="220" class="muted tiny">App 内支付页面</text>
+    <rect x="82" y="274" width="226" height="226" rx="8" fill="#f3f6f8" stroke="#dce4ec"/>
+    <rect x="122" y="314" width="146" height="146" rx="6" fill="#ffffff" stroke="#121820"/>
+    <path d="M142 334h34v34h-34Zm72 0h34v34h-34Zm-72 72h34v34h-34Zm58-38h18v18h-18Zm30 38h18v18h-18Zm-42 32h18v18h-18Z" fill="#121820"/>
+    <text x="195" y="540" text-anchor="middle" class="panel-title">请完成支付</text>
+    <text x="195" y="566" text-anchor="middle" class="muted small">App 正在轮询订单状态</text>
+    <rect x="36" y="646" width="318" height="52" rx="26" class="btn-blue"/>
+    <text x="195" y="679" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="STHeiti, PingFang SC">我已完成支付</text>
+    <rect x="36" y="718" width="318" height="74" rx="8" class="card-soft"/>
+    <text x="56" y="747" class="muted small">支付成功后自动刷新套餐与配置。</text>
+    <text x="56" y="771" class="muted small">失败或取消不会修改当前订阅。</text>
+  </g>
+
+  <!-- Screen 10: Device management -->
+  <g transform="translate(502 2006)">
+    <text x="0" y="-22" class="label">10 设备管理</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">设备管理</text>
+    <rect x="36" y="92" width="318" height="82" rx="8" class="card"/>
+    <text x="56" y="122" class="panel-title">设备数量</text>
+    <text x="56" y="151" class="num">2 / 5</text>
+    <rect x="210" y="120" width="110" height="10" rx="5" fill="#e1e8ef"/>
+    <rect x="210" y="120" width="44" height="10" rx="5" fill="#18a66a"/>
+    <g transform="translate(36 200)">
+      <rect width="318" height="104" rx="8" class="card"/>
+      <use href="#icon-device" x="18" y="24" width="28" height="28" color="#1769d4"/>
+      <text x="60" y="33" class="panel-title">MacBook Pro</text>
+      <text x="60" y="57" class="muted small">macOS · MoneyFly 1.0 · 香港</text>
+      <text x="60" y="82" class="muted tiny">备注：办公电脑</text>
+      <text x="252" y="36" class="blue small">备注</text>
+      <text x="292" y="36" class="red small">删除</text>
+    </g>
+    <g transform="translate(36 320)">
+      <rect width="318" height="104" rx="8" class="card"/>
+      <use href="#icon-device" x="18" y="24" width="28" height="28" color="#1769d4"/>
+      <text x="60" y="33" class="panel-title">Android Phone</text>
+      <text x="60" y="57" class="muted small">Android 14 · MoneyFly 1.0 · 上海</text>
+      <text x="60" y="82" class="muted tiny">最近访问：2026-06-23 21:40</text>
+      <text x="252" y="36" class="blue small">备注</text>
+      <text x="292" y="36" class="red small">删除</text>
+    </g>
+    <rect x="36" y="456" width="318" height="136" rx="8" fill="#fff7e8" stroke="#efd6a9"/>
+    <text x="56" y="488" class="amber panel-title">设备超限处理</text>
+    <text x="56" y="514" class="muted small">超过套餐限制时，订阅会返回失效节点。</text>
+    <text x="56" y="538" class="muted small">删除不用的设备后，重新连接会自动更新配置。</text>
+    <rect x="56" y="558" width="142" height="26" rx="13" class="chip-amber"/>
+    <text x="127" y="576" text-anchor="middle" class="amber small">固定设备识别</text>
+    <rect x="36" y="716" width="318" height="76" rx="8" class="card-soft"/>
+    <text x="56" y="746" class="muted small">App 使用固定设备 ID，避免换网络重复占用设备。</text>
+  </g>
+
+  <!-- Screen 11: Settings -->
+  <g transform="translate(948 2006)">
+    <text x="0" y="-22" class="label">11 设置</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">设置</text>
+    <text x="36" y="100" class="muted small">账号与服务</text>
+    <rect x="36" y="116" width="318" height="224" rx="8" class="card"/>
+    <text x="58" y="150" class="ink body">套餐购买</text>
+    <line x1="56" y1="170" x2="334" y2="170" class="line"/>
+    <text x="58" y="202" class="ink body">设备管理</text>
+    <line x1="56" y1="222" x2="334" y2="222" class="line"/>
+    <text x="58" y="254" class="ink body">订单记录</text>
+    <line x1="56" y1="274" x2="334" y2="274" class="line"/>
+    <text x="58" y="306" class="ink body">退出账号</text>
+    <text x="298" y="306" class="red small">清理配置</text>
+    <text x="36" y="380" class="muted small">连接与系统</text>
+    <rect x="36" y="396" width="318" height="276" rx="8" class="card"/>
+    <text x="58" y="430" class="ink body">模式设置</text>
+    <line x1="56" y1="450" x2="334" y2="450" class="line"/>
+    <text x="58" y="482" class="ink body">DNS 设置</text>
+    <line x1="56" y1="502" x2="334" y2="502" class="line"/>
+    <text x="58" y="534" class="ink body">分应用代理</text>
+    <line x1="56" y1="554" x2="334" y2="554" class="line"/>
+    <text x="58" y="586" class="ink body">备份同步</text>
+    <line x1="56" y1="606" x2="334" y2="606" class="line"/>
+    <text x="58" y="638" class="ink body">语言与外观</text>
+    <text x="36" y="708" class="muted small">已移除入口</text>
+    <rect x="36" y="724" width="318" height="68" rx="8" fill="#fff1f0" stroke="#f1c8c4"/>
+    <text x="56" y="752" class="red small">添加配置、查看配置、Apple TV、统计分析</text>
+    <text x="56" y="775" class="red small">使用教程、常见问题、规则集、HTML 工具集</text>
+  </g>
+
+  <!-- Screen 12: Home customization -->
+  <g transform="translate(1394 2006)">
+    <text x="0" y="-22" class="label">12 主页信息自定义</text>
+    <rect class="phone shadow" width="390" height="844" rx="30"/>
+    <rect x="18" y="16" width="354" height="812" rx="24" fill="#fbfcfd"/>
+    <use href="#icon-back" x="34" y="36" width="24" height="24" color="#121820"/>
+    <text x="68" y="55" class="page-title">主页信息</text>
+    <text x="36" y="96" class="muted body">选择首页保留的信息卡片。</text>
+    <rect x="36" y="126" width="318" height="520" rx="8" class="card"/>
+    <g transform="translate(56 154)">
+      <rect width="24" height="24" rx="6" class="btn-blue"/>
+      <use href="#icon-check" x="3" y="3" width="18" height="18" color="#fff"/>
+      <text x="42" y="18" class="ink body">用户信息与套餐状态</text>
+    </g>
+    <line x1="56" y1="196" x2="334" y2="196" class="line"/>
+    <g transform="translate(56 218)">
+      <rect width="24" height="24" rx="6" class="btn-blue"/>
+      <use href="#icon-check" x="3" y="3" width="18" height="18" color="#fff"/>
+      <text x="42" y="18" class="ink body">运行时长</text>
+    </g>
+    <line x1="56" y1="260" x2="334" y2="260" class="line"/>
+    <g transform="translate(56 282)">
+      <rect width="24" height="24" rx="6" class="btn-blue"/>
+      <use href="#icon-check" x="3" y="3" width="18" height="18" color="#fff"/>
+      <text x="42" y="18" class="ink body">实时速度</text>
+    </g>
+    <line x1="56" y1="324" x2="334" y2="324" class="line"/>
+    <g transform="translate(56 346)">
+      <rect width="24" height="24" rx="6" class="btn-blue"/>
+      <use href="#icon-check" x="3" y="3" width="18" height="18" color="#fff"/>
+      <text x="42" y="18" class="ink body">总流量</text>
+    </g>
+    <line x1="56" y1="388" x2="334" y2="388" class="line"/>
+    <g transform="translate(56 410)">
+      <rect width="24" height="24" rx="6" fill="#ffffff" stroke="#b9c5d0"/>
+      <text x="42" y="18" class="ink body">出口 IP</text>
+    </g>
+    <line x1="56" y1="452" x2="334" y2="452" class="line"/>
+    <g transform="translate(56 474)">
+      <rect width="24" height="24" rx="6" class="btn-blue"/>
+      <use href="#icon-check" x="3" y="3" width="18" height="18" color="#fff"/>
+      <text x="42" y="18" class="ink body">当前节点</text>
+    </g>
+    <line x1="56" y1="516" x2="334" y2="516" class="line"/>
+    <g transform="translate(56 538)">
+      <rect width="24" height="24" rx="6" fill="#ffffff" stroke="#b9c5d0"/>
+      <text x="42" y="18" class="ink body">内存与连接数</text>
+    </g>
+    <line x1="56" y1="580" x2="334" y2="580" class="line"/>
+    <g transform="translate(56 602)">
+      <rect width="24" height="24" rx="6" fill="#ffffff" stroke="#b9c5d0"/>
+      <text x="42" y="18" class="ink body">网络检测入口</text>
+    </g>
+    <rect x="36" y="684" width="318" height="52" rx="26" class="btn-blue"/>
+    <text x="195" y="717" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="STHeiti, PingFang SC">保存</text>
+    <rect x="36" y="758" width="318" height="34" rx="8" class="card-soft"/>
+    <text x="56" y="780" class="muted tiny">不会显示手动配置、添加配置或配置内容。</text>
+  </g>
+</svg>

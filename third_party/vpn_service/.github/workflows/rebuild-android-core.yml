@@ -1,0 +1,162 @@
+name: Rebuild Android Core
+
+on:
+  push:
+    branches:
+      - main
+  repository_dispatch:
+    types:
+      - mihomo-updated
+  workflow_dispatch:
+    inputs:
+      mihomo_sha:
+        description: "Optional cyenxchen/mihomo commit SHA to build"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-android-core-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild gomobile Android artifact
+    if: "${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'chore: rebuild Android mihomo core') }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout VPN service
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.CLASHMI_DISPATCH_TOKEN || github.token }}
+
+      - name: Select mihomo source
+        env:
+          DISPATCH_SHA: ${{ github.event.client_payload.sha || '' }}
+          INPUT_SHA: ${{ github.event.inputs.mihomo_sha || '' }}
+        run: |
+          set -euo pipefail
+          mihomo_sha="${INPUT_SHA:-${DISPATCH_SHA}}"
+          if [[ -z "${mihomo_sha}" ]]; then
+            echo "Using checked-out core/mihomo submodule."
+            exit 0
+          fi
+
+          git -C core/mihomo fetch origin "${mihomo_sha}"
+          git -C core/mihomo checkout --detach "${mihomo_sha}"
+          echo "Selected mihomo ${mihomo_sha}"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
+        with:
+          go-download-base-url: "https://github.com/MetaCubeX/go/releases/download/build"
+          go-version: "1.26"
+          cache-dependency-path: core/mobile/go.sum
+
+      - name: Sync Go module metadata
+        working-directory: core/mobile
+        run: |
+          set -euo pipefail
+          echo "Tidying core/mobile against mihomo $(git -C ../mihomo rev-parse --short HEAD)"
+          go mod tidy
+          git diff --stat -- go.mod go.sum || true
+
+      - name: Install gomobile
+        working-directory: core/mobile
+        run: |
+          set -euo pipefail
+          go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20260410095206-2cfb76559b7b
+          gomobile init
+
+      - name: Test Go wrapper
+        working-directory: core/mobile
+        run: go test -tags with_gvisor,cmfa ./...
+
+      - name: Build Android AAR
+        working-directory: core/mobile
+        run: |
+          set -euo pipefail
+          gomobile bind \
+            -target=android/arm64 \
+            -androidapi 26 \
+            -tags with_gvisor,cmfa \
+            -javapkg=com.cyenx.clashmi.core \
+            -o ../../android/src/main/libs/clashmicore.aar \
+            .
+
+      - name: Extract Android runtime artifacts
+        run: |
+          set -euo pipefail
+          unzip -p android/src/main/libs/clashmicore.aar classes.jar > android/libs/clashmicore.jar
+          unzip -p android/src/main/libs/clashmicore.aar jni/arm64-v8a/libgojni.so > android/src/main/jniLibs/arm64-v8a/libgojni.so
+
+      - name: Commit rebuilt artifacts
+        id: commit
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TYPE: ${{ github.event.action || '' }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            core/mihomo \
+            core/mobile/go.mod \
+            core/mobile/go.sum \
+            android/src/main/libs/clashmicore.aar \
+            android/src/main/libs/clashmicore-sources.jar \
+            android/libs/clashmicore.jar \
+            android/src/main/jniLibs/arm64-v8a/libgojni.so
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            echo "No rebuilt artifact changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: rebuild Android mihomo core"
+          git push origin "HEAD:${GITHUB_REF_NAME:-main}"
+          echo "changed=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Dispatch Clash Mi Android release
+        env:
+          DISPATCH_TOKEN: ${{ secrets.CLASHMI_DISPATCH_TOKEN }}
+          MIHOMO_SHA: ${{ github.event.client_payload.sha || github.event.inputs.mihomo_sha || '' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DISPATCH_TOKEN}" ]]; then
+            echo "::error::CLASHMI_DISPATCH_TOKEN secret is required to trigger cyenxchen/clashmi"
+            exit 1
+          fi
+
+          service_sha="$(git rev-parse HEAD)"
+          curl --fail-with-body \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${DISPATCH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/cyenxchen/clashmi/dispatches \
+            -d @- <<JSON
+          {
+            "event_type": "vpn-service-updated",
+            "client_payload": {
+              "repository": "${GITHUB_REPOSITORY}",
+              "ref": "${GITHUB_REF_NAME:-main}",
+              "service_sha": "${service_sha}",
+              "mihomo_sha": "${MIHOMO_SHA}"
+            }
+          }
+          JSON

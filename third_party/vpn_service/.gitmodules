@@ -1,0 +1,4 @@
+[submodule "core/mihomo"]
+	path = core/mihomo
+	url = https://github.com/cyenxchen/mihomo.git
+	branch = Meta

@@ -1,0 +1,4 @@
+-keep class io.nebula.vpn_service.VpnServicePlugin
+-keep class io.nebula.vpn_service.VpnServiceImpl
+-keep class com.cyenx.clashmi.core.** { *; }
+-keep class go.** { *; }

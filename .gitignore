@@ -1,0 +1,88 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Web related
+lib/generated_plugin_registrant.dart
+lib/generated/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/src/debug
+/android/app/src/profile
+/android/app/src/release
+/logs
+/.vs
+/*.zip
+/dist/*.apk
+/dist/*.exe
+/dist/*.zip
+/dist/*.xcarchive
+/dist/karing_*
+/dist/*+*
+/bind/apple/Libbox.xcframework
+/bind/android/core
+/bind/windows/core
+/bind/linux/core
+ios/karingWidget/VpnServiceHandler.swift
+/.idea/workspace.xml
+/lib/app/private
+/android/app/build
+/.sentry-native
+/dist/ios
+/dist/macos
+/todo.txt
+/android/app/.cxx
+/android/.kotlin
+/android/key.properties
+/android/local.properties
+
+*.hprof
+/android/build
+CODEBASE_ANALYSIS.md
+IMPLEMENTATION_GUIDE.md
+PLAN5_CONTINUATION.md
+PLAN5_IMPACT_ANALYSIS.md
+REFACTORING_ANALYSIS.md
+REFACTORING_SUMMARY.md
+START_HERE_SINGBOX_SPLIT.md
+TECHNICAL_INVENTORY.md
+build_log.txt
+build_output.txt

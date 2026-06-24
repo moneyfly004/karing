@@ -1,0 +1,11 @@
+This application (Karing) collects limited data to provide you with fast and stable network services.
+
+When you use this application and it encounters errors or crashes, we may collect the following information for analysis and improvement of our product:
+
+● Hardware model, operating system type, and operating system version.
+
+● Application platform, application version, anonymized application logs, and crash report data.
+
+● We will not share your information with any third parties.
+
+● You can disable the above data collection by turning off 'About' - 'Application Improvement Data'.
