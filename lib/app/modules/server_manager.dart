@@ -829,17 +829,20 @@ class ServerManager {
     String filePath = await PathUtils.subscribeFilePath();
     bool exists = await File(filePath).exists();
     if (!exists) {
-      ServerConfigGroupItem item = ServerConfigGroupItem();
-      item.index = 0;
-      item.groupid = ServerManager.getCustomGroupId();
-      item.type = SubscriptionLinkType.singbox;
-      _serverConfig.items.insert(0, item);
+      _resetServerConfigToDefault();
       return;
     }
 
     try {
       String content = await File(filePath).readAsString();
-      content = await MoneyflyConfigCrypto.decryptIfNeeded(content);
+      String decrypted = await MoneyflyConfigCrypto.decryptIfNeeded(content);
+      if (decrypted.isEmpty &&
+          MoneyflyConfigCrypto.isEncryptedContent(content)) {
+        await _backupInvalidServerConfig(filePath);
+        _resetServerConfigToDefault();
+        return;
+      }
+      content = decrypted;
       if (content.isNotEmpty) {
         var config = jsonDecode(content);
         _serverConfig.fromJson(config);
@@ -854,6 +857,34 @@ class ServerManager {
           attachments: [filePath]);
       Log.w(
           "ServerManager.loadServerConfig exception $filePath ${err.toString()}");
+      await _backupInvalidServerConfig(filePath);
+      _resetServerConfigToDefault();
+    }
+  }
+
+  static void _resetServerConfigToDefault() {
+    _serverConfig.clear();
+    ServerConfigGroupItem item = ServerConfigGroupItem();
+    item.index = 0;
+    item.groupid = ServerManager.getCustomGroupId();
+    item.type = SubscriptionLinkType.singbox;
+    _serverConfig.items.insert(0, item);
+  }
+
+  static Future<void> _backupInvalidServerConfig(String filePath) async {
+    try {
+      var file = File(filePath);
+      if (!await file.exists()) {
+        return;
+      }
+      String backupPath =
+          "$filePath.invalid.${DateTime.now().millisecondsSinceEpoch}.bak";
+      await file.rename(backupPath);
+      Log.w(
+          "ServerManager.loadServerConfig moved invalid config to $backupPath");
+    } catch (err) {
+      Log.w(
+          "ServerManager.loadServerConfig backup exception ${err.toString()}");
     }
   }
 

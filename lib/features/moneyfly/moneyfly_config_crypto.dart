@@ -28,8 +28,7 @@ class MoneyflyConfigCrypto {
   }
 
   static Future<String> decryptIfNeeded(String content) async {
-    final trimmed = content.trimLeft();
-    if (!trimmed.startsWith('{') || !trimmed.contains(marker)) {
+    if (!isEncryptedContent(content)) {
       return content;
     }
     final json = jsonDecode(content);
@@ -40,16 +39,25 @@ class MoneyflyConfigCrypto {
     if (key == null || key.isEmpty) {
       return '';
     }
-    final box = SecretBox(
-      base64Url.decode((json['payload'] ?? '').toString()),
-      nonce: base64Url.decode((json['nonce'] ?? '').toString()),
-      mac: Mac(base64Url.decode((json['mac'] ?? '').toString())),
-    );
-    final plain = await _algorithm.decrypt(
-      box,
-      secretKey: SecretKey(base64.decode(key)),
-    );
-    return utf8.decode(plain);
+    try {
+      final box = SecretBox(
+        base64Url.decode((json['payload'] ?? '').toString()),
+        nonce: base64Url.decode((json['nonce'] ?? '').toString()),
+        mac: Mac(base64Url.decode((json['mac'] ?? '').toString())),
+      );
+      final plain = await _algorithm.decrypt(
+        box,
+        secretKey: SecretKey(base64.decode(key)),
+      );
+      return utf8.decode(plain);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static bool isEncryptedContent(String content) {
+    final trimmed = content.trimLeft();
+    return trimmed.startsWith('{') && trimmed.contains(marker);
   }
 
   static List<int> _nonce() {

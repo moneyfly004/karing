@@ -4,6 +4,7 @@ import "dart:io";
 
 import "package:karing/app/utils/app_utils.dart";
 import "package:karing/app/utils/file_utils.dart";
+import "package:karing/app/utils/platform_utils.dart";
 import "package:path/path.dart" as path;
 import "package:path_provider/path_provider.dart";
 import "package:vpn_service/vpn_service.dart";
@@ -12,9 +13,14 @@ class PathUtils {
   static bool _fixCopyed = false;
   static String _appAssetsDir = "";
   static String _profileDir = "";
+  static String _lastProfileDirError = "";
   static bool _portableMode = false;
   static bool portableMode() {
     return _portableMode;
+  }
+
+  static String lastProfileDirError() {
+    return _lastProfileDirError;
   }
 
   static Future<void> fixAndriodStoragePath(Directory sharedDirectory) async {
@@ -85,15 +91,31 @@ class PathUtils {
   }
 
   static Future<String> profileDirNonPortable() async {
+    List<String> errors = [];
     Directory? sharedDirectory =
         await FlutterVpnService.getAppGroupDirectory(AppUtils.getGroupId());
     if (sharedDirectory != null) {
-      if (!await sharedDirectory.exists()) {
-        await sharedDirectory.create(recursive: true);
+      try {
+        await _ensureWritableDirectory(sharedDirectory);
+        await fixAndriodStoragePath(sharedDirectory);
+        _lastProfileDirError = "";
+        return sharedDirectory.path;
+      } catch (err) {
+        errors.add("${sharedDirectory.path}: ${err.toString()}");
       }
-      await fixAndriodStoragePath(sharedDirectory);
-      return sharedDirectory.path;
     }
+    if (PlatformUtils.isPC()) {
+      for (var directory in _desktopProfileDirectories()) {
+        try {
+          await _ensureWritableDirectory(directory);
+          _lastProfileDirError = "";
+          return directory.path;
+        } catch (err) {
+          errors.add("${directory.path}: ${err.toString()}");
+        }
+      }
+    }
+    _lastProfileDirError = errors.join("\n");
     return "";
   }
 
@@ -102,23 +124,81 @@ class PathUtils {
       return _profileDir;
     }
     if (Platform.isWindows) {
+      String profileDir = profileDirForPortableMode();
       try {
-        String profileDir = profileDirForPortableMode();
         var file = Directory(profileDir);
         bool exist = await file.exists();
         if (exist) {
-          var testDir = Directory(path.join(profileDir, "__test_dir__"));
-          await testDir.create(recursive: true);
-          await testDir.delete();
+          await _ensureWritableDirectory(file);
           _profileDir = profileDir;
           _portableMode = true;
+          _lastProfileDirError = "";
           return _profileDir;
         }
-      } catch (err, stacktrace) {}
+      } catch (err, stacktrace) {
+        _lastProfileDirError = "$profileDir: ${err.toString()}";
+      }
     }
 
+    String portableError = _lastProfileDirError;
     _profileDir = await profileDirNonPortable();
+    if (_profileDir.isEmpty &&
+        portableError.isNotEmpty &&
+        !_lastProfileDirError.contains(portableError)) {
+      _lastProfileDirError = [
+        portableError,
+        if (_lastProfileDirError.isNotEmpty) _lastProfileDirError,
+      ].join("\n");
+    }
     return _profileDir;
+  }
+
+  static List<Directory> _desktopProfileDirectories() {
+    List<String> bases = [];
+    if (Platform.isWindows) {
+      _addPathCandidate(bases, Platform.environment["APPDATA"]);
+      String? userProfile = Platform.environment["USERPROFILE"];
+      if (userProfile != null && userProfile.isNotEmpty) {
+        _addPathCandidate(bases, path.join(userProfile, "AppData", "Roaming"));
+      }
+      _addPathCandidate(bases, Platform.environment["LOCALAPPDATA"]);
+    } else if (Platform.isMacOS) {
+      String? home = Platform.environment["HOME"];
+      if (home != null && home.isNotEmpty) {
+        _addPathCandidate(
+            bases, path.join(home, "Library", "Application Support"));
+      }
+    } else if (Platform.isLinux) {
+      _addPathCandidate(bases, Platform.environment["XDG_DATA_HOME"]);
+      String? home = Platform.environment["HOME"];
+      if (home != null && home.isNotEmpty) {
+        _addPathCandidate(bases, path.join(home, ".local", "share"));
+      }
+    }
+    if (bases.isEmpty) {
+      _addPathCandidate(bases, Directory.systemTemp.path);
+    }
+    return bases
+        .map((base) => Directory(path.join(base, AppUtils.getName())))
+        .toList();
+  }
+
+  static void _addPathCandidate(List<String> paths, String? candidate) {
+    if (candidate == null || candidate.isEmpty) {
+      return;
+    }
+    if (!paths.contains(candidate)) {
+      paths.add(candidate);
+    }
+  }
+
+  static Future<void> _ensureWritableDirectory(Directory directory) async {
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    var testDir = Directory(path.join(directory.path, "__test_dir__"));
+    await testDir.create(recursive: true);
+    await testDir.delete();
   }
 
   static Future<String> profilesDir() async {

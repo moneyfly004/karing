@@ -19,8 +19,6 @@ import 'package:karing/app/modules/setting_manager.dart';
 import 'package:karing/app/utils/analytics_utils.dart';
 import 'package:karing/app/utils/app_args.dart';
 import 'package:karing/app/utils/app_utils.dart';
-import 'package:karing/app/utils/geoip_subnet_utils.dart';
-import 'package:karing/app/utils/file_utils.dart';
 
 import 'package:karing/app/utils/log.dart';
 import 'package:karing/app/utils/path_utils.dart';
@@ -56,8 +54,6 @@ void main(List<String> args) async {
   //runZonedGuarded(() async {
   processArgs = args;
   WidgetsFlutterBinding.ensureInitialized();
-  await RemoteConfigManager.init();
-  await RemoteISPConfigManager.init();
   await LocaleSettings.useDeviceLocale();
 
   SemanticsBinding.instance.ensureSemantics(); //showSemanticsDebugger
@@ -75,6 +71,7 @@ Future<void> run(List<String> args) async {
       String profileDir = await PathUtils.profileDir();
       if (profileDir.isEmpty) {
         startFailedReason = StartFailedReason.invalidProfile;
+        startFailedReasonDesc = PathUtils.lastProfileDirError();
         break;
       }
       await Log.init();
@@ -85,6 +82,7 @@ Future<void> run(List<String> args) async {
       String cache = await PathUtils.cacheDir();
       if (cache.isEmpty) {
         startFailedReason = StartFailedReason.invalidProfile;
+        startFailedReasonDesc = PathUtils.lastProfileDirError();
         break;
       }
       String version = await AppUtils.getPackgetVersion();
@@ -157,8 +155,12 @@ Future<void> run(List<String> args) async {
       });
     }
 
-    await SettingManager.init();
-    if (PlatformUtils.isMobile()) {
+    if (startFailedReason == null) {
+      await RemoteConfigManager.init();
+      await RemoteISPConfigManager.init();
+      await SettingManager.init();
+    }
+    if (startFailedReason == null && PlatformUtils.isMobile()) {
       if (SettingManager.getConfig().ui.autoOrientation) {
         SystemChrome.setPreferredOrientations([
           DeviceOrientation.portraitUp,
@@ -299,9 +301,10 @@ class MyAppState extends State<MyApp>
     return MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: Themes()),
-          ChangeNotifierProvider(
-            create: (_) => MoneyflyAccountController()..init(),
-          ),
+          if (startFailedReason == null)
+            ChangeNotifierProvider(
+              create: (_) => MoneyflyAccountController()..init(),
+            ),
         ],
         child: Consumer<Themes>(builder: (context, appTheme, _) {
           Provider.of<Themes>(context)
