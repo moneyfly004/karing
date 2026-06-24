@@ -375,7 +375,7 @@ jobs:
 
       - name: Inject service binary and re-sign app for local use
         run: |
-          APP_PATH="$(find dist/macos -name 'Karing.app' -type d | head -n 1)"
+          APP_PATH="$(find dist -name 'Karing.app' -type d | head -n 1)"
           if [ -z "$APP_PATH" ]; then
             echo "Karing.app not found in dist"
             find dist -type d | head -n 30
@@ -415,9 +415,17 @@ jobs:
 
       - name: Repackage DMG with re-signed app
         run: |
-          APP_PATH="$(find dist/macos -name 'Karing.app' -type d | head -n 1)"
+          APP_PATH="$(find dist -name 'Karing.app' -type d | head -n 1)"
           mkdir -p release-dist
-          appdmg macos/packaging/appdmg_make_config.json \
+          DMG_PATH="$(find dist -name '*.dmg' | head -n 1)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "No DMG found, building from app"
+            find dist -type f | sort || true
+            exit 1
+          fi
+          # Build new DMG from re-signed app
+          APP_DIR="$(dirname "$APP_PATH")"
+          hdiutil create -volname "Karing" -srcfolder "$APP_DIR" -ov -format UDZO \
             "release-dist/${ASSET_PREFIX}_macos_universal.dmg"
           ls -lh release-dist
 
