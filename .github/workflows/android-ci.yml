@@ -99,7 +99,7 @@ jobs:
 
   windows:
     name: Windows installer and ZIP
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 90
 
     defaults:
@@ -298,6 +298,11 @@ jobs:
       - name: Enable macOS desktop
         run: flutter config --enable-macos-desktop
 
+      - name: Install macOS pods
+        run: |
+          cd macos
+          pod install --repo-update
+
       - name: Install packaging tools
         run: |
           dart pub global activate flutter_distributor
@@ -360,7 +365,9 @@ jobs:
             clang \
             cmake \
             curl \
+            libc-ares-dev \
             libayatana-appindicator3-dev \
+            libcurl4-openssl-dev \
             libfuse2 \
             libgtk-3-dev \
             libkeybinder-3.0-dev \
@@ -413,6 +420,9 @@ jobs:
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
       - name: Package Linux formats
+        env:
+          CMAKE_PREFIX_PATH: /usr
+          CURL_ROOT: /usr
         run: flutter_distributor package --platform linux --targets deb,rpm,appimage
 
       - name: Collect Linux release assets
