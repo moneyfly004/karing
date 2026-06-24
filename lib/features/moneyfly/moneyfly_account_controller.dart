@@ -181,12 +181,12 @@ class MoneyflyAccountController extends ChangeNotifier {
     return _api.devices();
   }
 
-  Future<void> deleteDevice(int id) async {
+  Future<void> deleteDevice(String id) async {
     await _api.deleteDevice(id);
     await refreshAccount(syncConfig: true);
   }
 
-  Future<void> updateDeviceRemark(int id, String remark) {
+  Future<void> updateDeviceRemark(String id, String remark) {
     return _api.updateDeviceRemark(id, remark);
   }
 

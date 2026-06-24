@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:flutter_inapp_notifications/flutter_inapp_notifications.dart';
-import 'package:karing/app/extension/colors.dart';
 import 'package:karing/app/local_services/vpn_service.dart';
 import 'package:karing/app/utils/app_lifecycle_state_notify.dart';
 //import 'package:animated_toggle_switch/animated_toggle_switch.dart';
@@ -104,17 +103,11 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     with WidgetsBindingObserver, ProtocolListener, AfterLayoutMixin {
   static const String userAgreementAgreedIdKey = 'userAgreementAgreedKey';
   static const double kMaxWidth = 500;
-  static const int kLocalNotificationsIdVpnStateId = 1;
-  static const int kLocalNotificationsIdNetStateId = 2;
-
-  static const String kLocalNotificationsIdNetState = "netState";
-  static const String kLocalNotificationsIdVpnState = "vpnState";
   final FocusNode _focusNodeSettings = FocusNode();
   final FocusNode _focusNodeTheme = FocusNode();
   final FocusNode _focusNodeSwitch = FocusNode();
   final FocusNode _focusNodeSelect = FocusNode();
 
-  final FocusNode _focusNodeSystemProxyTips = FocusNode();
   final FocusNode _focusNodeSystemProxy = FocusNode();
   final FocusNode _focusNodeRule = FocusNode();
   final FocusNode _focusNodeGlobal = FocusNode();
@@ -1878,7 +1871,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     _focusNodeSwitch.dispose();
     _focusNodeSelect.dispose();
 
-    _focusNodeSystemProxyTips.dispose();
     _focusNodeSystemProxy.dispose();
     _focusNodeRule.dispose();
     _focusNodeGlobal.dispose();
@@ -1911,7 +1903,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
   Widget build(BuildContext context) {
     final tcontext = Translations.of(context);
     Size windowSize = MediaQuery.of(context).size;
-    var settingConfig = SettingManager.getConfig();
     AutoUpdateCheckVersion checkVersion = AutoUpdateManager.getVersionCheck();
     List<Notice> notices = NoticeManager.getNotices();
     NoticeItem? noticeItem;
@@ -2056,7 +2047,8 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
                                   value: _state ==
                                       FlutterVpnServiceState.connected,
                                   focusNode: _focusNodeSwitch,
-                                  activeColor: ThemeDefine.kColorGreenBright,
+                                  activeTrackColor:
+                                      ThemeDefine.kColorGreenBright,
                                   thumbColor:
                                       WidgetStateProperty.resolveWith<Color>(
                                           (Set<WidgetState> states) {
@@ -2182,75 +2174,54 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
                         Column(
                           children: [
                             VPNService.getSupportSystemProxy()
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Tooltip(
-                                              message: tcontext.HomeScreen
-                                                  .systemProxyTips(
-                                                      hp: settingConfig
-                                                          .proxy.mixedRulePort,
-                                                      sp: settingConfig
-                                                          .proxy.mixedRulePort),
-                                              child: InkWell(
-                                                focusNode:
-                                                    _focusNodeSystemProxyTips,
-                                                onTap: () {
-                                                  DialogUtils.showAlertDialog(
-                                                      context,
-                                                      tcontext.HomeScreen
-                                                          .systemProxyTips(
-                                                              hp: settingConfig
-                                                                  .proxy
-                                                                  .mixedRulePort,
-                                                              sp: settingConfig
-                                                                  .proxy
-                                                                  .mixedRulePort));
-                                                },
-                                                child: const Icon(
-                                                  Icons.info_outlined,
-                                                  size: 20,
-                                                ),
-                                              )),
-                                          const SizedBox(
-                                            width: 15,
-                                          ),
-                                          Text(
-                                            tcontext.meta.systemProxy,
-                                            style: const TextStyle(
-                                              fontSize:
-                                                  ThemeConfig.kFontSizeListItem,
-                                            ),
-                                          ),
-                                          Switch.adaptive(
-                                            focusNode: _focusNodeSystemProxy,
-                                            value: _isSystemProxySet,
-                                            activeColor:
-                                                ThemeDefine.kColorGreenBright,
-                                            onChanged: noConfig ||
-                                                    _working ||
-                                                    _state ==
-                                                        FlutterVpnServiceState
-                                                            .connecting ||
-                                                    _state ==
-                                                        FlutterVpnServiceState
-                                                            .disconnecting ||
-                                                    _state ==
-                                                        FlutterVpnServiceState
-                                                            .reasserting
-                                                ? null
-                                                : (bool newValue) {
-                                                    VPNService.setSystemProxy(
-                                                        newValue);
-                                                    setState(() {});
-                                                  },
-                                          ),
-                                        ],
+                                      Text(
+                                        tcontext.meta.systemProxy,
+                                        style: const TextStyle(
+                                          fontSize:
+                                              ThemeConfig.kFontSizeListItem,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Switch.adaptive(
+                                        focusNode: _focusNodeSystemProxy,
+                                        value: _isSystemProxySet,
+                                        activeThumbColor:
+                                            ThemeDefine.kColorGreenBright,
+                                        onChanged: noConfig ||
+                                                _working ||
+                                                _state ==
+                                                    FlutterVpnServiceState
+                                                        .connecting ||
+                                                _state ==
+                                                    FlutterVpnServiceState
+                                                        .disconnecting ||
+                                                _state ==
+                                                    FlutterVpnServiceState
+                                                        .reasserting
+                                            ? null
+                                            : (bool newValue) async {
+                                                final previous =
+                                                    _isSystemProxySet;
+                                                setState(() {
+                                                  _isSystemProxySet = newValue;
+                                                });
+                                                try {
+                                                  await VPNService
+                                                      .setSystemProxy(newValue);
+                                                  await _checkSystemProxy();
+                                                } catch (_) {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _isSystemProxySet =
+                                                          previous;
+                                                    });
+                                                  }
+                                                }
+                                              },
                                       ),
                                     ],
                                   )
@@ -2349,7 +2320,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
       nodes.add(node1);
       nodes.add([_focusNodeSwitch]);
       if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-        nodes.add([_focusNodeSystemProxyTips, _focusNodeSystemProxy]);
+        nodes.add([_focusNodeSystemProxy]);
       }
       nodes.add([_focusNodeRule, _focusNodeGlobal]);
       nodes.add([_focusNodeConnections]);

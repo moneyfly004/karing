@@ -147,7 +147,13 @@ class MoneyflyPaymentMethod {
   factory MoneyflyPaymentMethod.fromJson(Map<String, dynamic> json) {
     return MoneyflyPaymentMethod(
       id: _asInt(json['id']),
-      payType: (json['pay_type'] ?? '').toString(),
+      payType: _firstString(json, const [
+        'pay_type',
+        'payType',
+        'type',
+        'code',
+        'name',
+      ]),
     );
   }
 }
@@ -185,18 +191,89 @@ class MoneyflyPayment {
   MoneyflyPayment({
     required this.orderNo,
     required this.paymentUrl,
+    this.qrCode = '',
+    this.qrCodeUrl = '',
     this.transactionId = '',
   });
 
   final String orderNo;
   final String paymentUrl;
+  final String qrCode;
+  final String qrCodeUrl;
   final String transactionId;
 
+  bool get hasQrContent => qrCode.isNotEmpty || qrCodeUrl.isNotEmpty;
+
+  bool get hasPaymentContent => paymentUrl.isNotEmpty || hasQrContent;
+
+  String get scannableContent {
+    if (qrCode.isNotEmpty) {
+      return qrCode;
+    }
+    if (qrCodeUrl.isNotEmpty) {
+      return qrCodeUrl;
+    }
+    return paymentUrl;
+  }
+
   factory MoneyflyPayment.fromJson(Map<String, dynamic> json) {
+    final maps = _nestedMaps(json, const [
+      'data',
+      'payment',
+      'pay',
+      'order',
+      'result',
+    ]);
     return MoneyflyPayment(
-      orderNo: (json['order_no'] ?? '').toString(),
-      paymentUrl: (json['payment_url'] ?? json['url'] ?? '').toString(),
-      transactionId: (json['transaction_id'] ?? '').toString(),
+      orderNo: _firstStringInMaps(maps, const [
+        'order_no',
+        'orderNo',
+        'trade_no',
+        'tradeNo',
+      ]),
+      paymentUrl: _firstStringInMaps(maps, const [
+        'payment_url',
+        'paymentUrl',
+        'pay_url',
+        'payUrl',
+        'url',
+        'checkout_url',
+        'checkoutUrl',
+        'redirect_url',
+        'redirectUrl',
+        'gateway_url',
+        'gatewayUrl',
+        'cashier_url',
+        'cashierUrl',
+      ]),
+      qrCode: _firstStringInMaps(maps, const [
+        'qr_code',
+        'qrCode',
+        'qrcode',
+        'qr',
+        'code_url',
+        'codeUrl',
+        'pay_qrcode',
+        'payQrcode',
+        'pay_qr_code',
+        'payQrCode',
+      ]),
+      qrCodeUrl: _firstStringInMaps(maps, const [
+        'qr_code_url',
+        'qrCodeUrl',
+        'qrcode_url',
+        'qrcodeUrl',
+        'qr_url',
+        'qrUrl',
+        'pay_qrcode_url',
+        'payQrcodeUrl',
+      ]),
+      transactionId: _firstStringInMaps(maps, const [
+        'transaction_id',
+        'transactionId',
+        'payment_id',
+        'paymentId',
+      ]),
     );
   }
 }
@@ -214,7 +291,7 @@ class MoneyflyDevice {
     this.remark = '',
   });
 
-  final int id;
+  final String id;
   final String deviceName;
   final String deviceType;
   final String osName;
@@ -226,17 +303,122 @@ class MoneyflyDevice {
 
   factory MoneyflyDevice.fromJson(Map<String, dynamic> json) {
     return MoneyflyDevice(
-      id: _asInt(json['id']),
-      deviceName: (json['device_name'] ?? '').toString(),
-      deviceType: (json['device_type'] ?? '').toString(),
-      osName: (json['os_name'] ?? '').toString(),
-      ipAddress: (json['ip_address'] ?? '').toString(),
-      region: (json['region'] ?? '').toString(),
-      lastAccess: (json['last_access'] ?? '').toString(),
-      accessCount: _asInt(json['access_count']),
-      remark: (json['remark'] ?? '').toString(),
+      id: _firstString(json, const [
+        'id',
+        'device_id',
+        'deviceId',
+        'uuid',
+        'token',
+        'fingerprint',
+      ]),
+      deviceName: _firstString(json, const [
+        'device_name',
+        'deviceName',
+        'name',
+        'hostname',
+        'model',
+        'device',
+      ]),
+      deviceType: _firstString(json, const [
+        'device_type',
+        'deviceType',
+        'type',
+        'platform',
+      ]),
+      osName: _firstString(json, const [
+        'os_name',
+        'osName',
+        'os',
+        'system',
+        'platform_name',
+        'platformName',
+      ]),
+      ipAddress: _firstString(json, const [
+        'ip_address',
+        'ipAddress',
+        'ip',
+        'last_ip',
+        'lastIp',
+      ]),
+      region: _firstString(json, const [
+        'region',
+        'location',
+        'country',
+        'city',
+      ]),
+      lastAccess: _firstString(json, const [
+        'last_access',
+        'lastAccess',
+        'last_seen',
+        'lastSeen',
+        'last_login',
+        'lastLogin',
+        'updated_at',
+        'updatedAt',
+        'created_at',
+        'createdAt',
+      ]),
+      accessCount: _asInt(
+        json['access_count'] ?? json['accessCount'] ?? json['login_count'],
+      ),
+      remark: _firstString(json, const [
+        'remark',
+        'remarks',
+        'note',
+        'alias',
+      ]),
     );
   }
+}
+
+String _firstString(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value == null) {
+      continue;
+    }
+    final text = value.toString().trim();
+    if (text.isNotEmpty && text != 'null') {
+      return text;
+    }
+  }
+  return '';
+}
+
+String _firstStringInMaps(
+  List<Map<String, dynamic>> maps,
+  List<String> keys,
+) {
+  for (final map in maps) {
+    final value = _firstString(map, keys);
+    if (value.isNotEmpty) {
+      return value;
+    }
+  }
+  return '';
+}
+
+List<Map<String, dynamic>> _nestedMaps(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
+  final maps = <Map<String, dynamic>>[json];
+  final visited = <Map<String, dynamic>>{json};
+  var cursor = 0;
+  while (cursor < maps.length) {
+    final map = maps[cursor];
+    cursor += 1;
+    for (final key in keys) {
+      final value = map[key];
+      if (value is Map) {
+        final nested = value.cast<String, dynamic>();
+        if (visited.add(nested)) {
+          maps.add(nested);
+        }
+      }
+    }
+  }
+  return maps;
 }
 
 int _asInt(dynamic value) {

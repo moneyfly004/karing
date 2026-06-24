@@ -365,8 +365,8 @@ class _MoneyflyPurchaseScreenState extends State<MoneyflyPurchaseScreen> {
       if (!mounted) {
         return;
       }
-      if (payment.paymentUrl.isEmpty) {
-        await DialogUtils.showAlertDialog(context, '支付方式未返回可打开的支付页面');
+      if (!payment.hasPaymentContent) {
+        await DialogUtils.showAlertDialog(context, '支付方式未返回支付链接或二维码');
         return;
       }
       await Navigator.push(

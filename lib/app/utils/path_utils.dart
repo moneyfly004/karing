@@ -298,7 +298,7 @@ class PathUtils {
 
   static String serviceExeName() {
     if (Platform.isLinux) {
-      return "karingService.so";
+      return "karingService";
     } else if (Platform.isWindows) {
       return "karingService.exe";
     }
@@ -308,6 +308,7 @@ class PathUtils {
   static String serviceExePath() {
     String filePath = "";
     if (Platform.isLinux) {
+      filePath = exeDir();
       filePath = path.join(filePath, serviceExeName());
     } else if (Platform.isWindows) {
       filePath = exeDir();

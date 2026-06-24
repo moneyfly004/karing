@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:karing/app/utils/qrcode_utils.dart';
 import 'package:karing/features/moneyfly/moneyfly_account_controller.dart';
 import 'package:karing/features/moneyfly/moneyfly_models.dart';
 import 'package:karing/features/moneyfly/moneyfly_theme.dart';
@@ -36,7 +39,9 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
   void initState() {
     super.initState();
     _status = widget.order.status.isEmpty ? 'pending' : widget.order.status;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openPayment());
+    if (widget.payment.paymentUrl.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openPayment());
+    }
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
   }
 
@@ -122,20 +127,7 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
                     border: Border.all(color: MoneyflyColors.line),
                   ),
                   child: Center(
-                    child: Container(
-                      width: 146,
-                      height: 146,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: MoneyflyColors.ink),
-                      ),
-                      child: const Icon(
-                        Icons.qr_code_2_rounded,
-                        color: MoneyflyColors.ink,
-                        size: 112,
-                      ),
-                    ),
+                    child: _paymentQrCode(),
                   ),
                 ),
                 const SizedBox(height: 22),
@@ -160,7 +152,9 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
           const SizedBox(height: 18),
           FilledButton.icon(
             style: moneyflyPrimaryButtonStyle(),
-            onPressed: _opened ? _poll : _openPayment,
+            onPressed: widget.payment.paymentUrl.isEmpty
+                ? (_polling ? null : _poll)
+                : (_opened ? _poll : _openPayment),
             icon: _polling
                 ? const SizedBox(
                     width: 18,
@@ -170,8 +164,12 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
                       color: Colors.white,
                     ),
                   )
-                : Icon(_opened ? Icons.refresh_rounded : Icons.payment_rounded),
-            label: Text(_opened ? '刷新支付状态' : '打开支付页面'),
+                : Icon(widget.payment.paymentUrl.isEmpty || _opened
+                    ? Icons.refresh_rounded
+                    : Icons.payment_rounded),
+            label: Text(widget.payment.paymentUrl.isEmpty || _opened
+                ? '刷新支付状态'
+                : '打开支付页面'),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -237,6 +235,98 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
     }
   }
 
+  Widget _paymentQrCode() {
+    final content = widget.payment.scannableContent;
+    final imageUrl = _imageUrl;
+    if (imageUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          imageUrl,
+          width: 184,
+          height: 184,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _generatedQr(content),
+        ),
+      );
+    }
+    final dataImage = _dataImageBytes(content);
+    if (dataImage != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.memory(
+          dataImage,
+          width: 184,
+          height: 184,
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+    return _generatedQr(content);
+  }
+
+  Widget _generatedQr(String content) {
+    if (content.isEmpty) {
+      return const Icon(
+        Icons.qr_code_2_rounded,
+        color: MoneyflyColors.ink,
+        size: 112,
+      );
+    }
+    final result = QrcodeUtils.toImage(content);
+    final image = result.data;
+    if (image == null) {
+      return const Icon(
+        Icons.qr_code_2_rounded,
+        color: MoneyflyColors.ink,
+        size: 112,
+      );
+    }
+    return Container(
+      width: 184,
+      height: 184,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: MoneyflyColors.line),
+      ),
+      child: FittedBox(child: image),
+    );
+  }
+
+  String? get _imageUrl {
+    for (final value in [widget.payment.qrCodeUrl, widget.payment.qrCode]) {
+      final uri = Uri.tryParse(value);
+      if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
+        final path = uri.path.toLowerCase();
+        if (path.endsWith('.png') ||
+            path.endsWith('.jpg') ||
+            path.endsWith('.jpeg') ||
+            path.endsWith('.webp') ||
+            path.endsWith('.gif') ||
+            value.contains('qr')) {
+          return value;
+        }
+      }
+    }
+    return null;
+  }
+
+  Uint8List? _dataImageBytes(String content) {
+    final marker = 'base64,';
+    if (!content.toLowerCase().startsWith('data:image/') ||
+        !content.toLowerCase().contains(marker)) {
+      return null;
+    }
+    try {
+      final index = content.toLowerCase().indexOf(marker);
+      return base64Decode(content.substring(index + marker.length));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _openPayment() async {
     if (_opened || widget.payment.paymentUrl.isEmpty) {
       return;
@@ -271,10 +361,14 @@ class _MoneyflyPaymentScreenState extends State<MoneyflyPaymentScreen> {
       if (_successStatus) {
         _timer?.cancel();
         await account.refreshAccount(syncConfig: true);
-        if (mounted) {
-          await DialogUtils.showAlertDialog(context, '支付成功，套餐已同步');
-          Navigator.pop(context, true);
+        if (!mounted) {
+          return;
         }
+        await DialogUtils.showAlertDialog(context, '支付成功，套餐已同步');
+        if (!mounted) {
+          return;
+        }
+        Navigator.pop(context, true);
       } else if (_status == 'cancelled' || _status == 'expired') {
         _timer?.cancel();
       }

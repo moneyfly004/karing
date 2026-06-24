@@ -166,15 +166,13 @@ class MoneyflyApi {
   }
 
   Future<List<MoneyflyPaymentMethod>> paymentMethods() async {
-    final data = await _request<Map<String, dynamic>>(
+    final data = await _request<dynamic>(
       'GET',
       '/payment/methods',
       auth: false,
       csrf: false,
     );
-    return _asList(
-      data['methods'],
-    ).map((e) => MoneyflyPaymentMethod.fromJson(e)).toList();
+    return _asList(data).map((e) => MoneyflyPaymentMethod.fromJson(e)).toList();
   }
 
   Future<MoneyflyOrder> createOrder(int packageId) async {
@@ -197,7 +195,9 @@ class MoneyflyApi {
       data: {
         'order_id': orderId,
         'payment_method_id': paymentMethodId,
-        'is_mobile': Platform.isAndroid || Platform.isIOS,
+        'is_mobile': true,
+        'return_url': AppUtils.officialWebsiteUrl,
+        'cancel_url': AppUtils.officialWebsiteUrl,
       },
       csrf: true,
     );
@@ -213,17 +213,64 @@ class MoneyflyApi {
     return _asList(data).map((e) => MoneyflyDevice.fromJson(e)).toList();
   }
 
-  Future<void> deleteDevice(int id) async {
-    await _request<dynamic>('DELETE', '/subscriptions/devices/$id', csrf: true);
-  }
-
-  Future<void> updateDeviceRemark(int id, String remark) async {
-    await _request<dynamic>(
-      'PUT',
-      '/subscriptions/devices/$id/remark',
-      data: {'remark': remark},
+  Future<void> deleteDevice(String id) async {
+    final encoded = Uri.encodeComponent(id);
+    await _requestWithFallback<dynamic>(
+      'DELETE',
+      [
+        '/subscriptions/devices/$encoded',
+        '/devices/$encoded',
+        '/user/devices/$encoded',
+      ],
       csrf: true,
     );
+  }
+
+  Future<void> updateDeviceRemark(String id, String remark) async {
+    final encoded = Uri.encodeComponent(id);
+    await _requestWithFallback<dynamic>(
+      'PUT',
+      [
+        '/subscriptions/devices/$encoded/remark',
+        '/devices/$encoded/remark',
+        '/devices/$encoded',
+        '/user/devices/$encoded/remark',
+      ],
+      data: {
+        'remark': remark,
+        'remarks': remark,
+        'note': remark,
+      },
+      csrf: true,
+    );
+  }
+
+  Future<T> _requestWithFallback<T>(
+    String method,
+    List<String> paths, {
+    Object? data,
+    bool auth = true,
+    bool csrf = false,
+  }) async {
+    MoneyflyApiException? lastError;
+    for (final path in paths) {
+      try {
+        return await _request<T>(
+          method,
+          path,
+          data: data,
+          auth: auth,
+          csrf: csrf,
+        );
+      } on MoneyflyApiException catch (err) {
+        lastError = err;
+        final status = err.statusCode ?? 0;
+        if (status != 404 && status != 405) {
+          rethrow;
+        }
+      }
+    }
+    throw lastError ?? MoneyflyApiException('请求失败');
   }
 
   Future<T> _request<T>(
@@ -253,10 +300,33 @@ class MoneyflyApi {
       final body = response.data;
       if (body is Map<String, dynamic>) {
         final code = body['code'];
-        if (code == 0) {
-          return body['data'] as T;
+        final success = body['success'];
+        final status = body['status']?.toString().toLowerCase();
+        final hasData = body.containsKey('data');
+        if (code == null &&
+            success == null &&
+            !hasData &&
+            status != 'success' &&
+            status != 'ok' &&
+            status != 'error' &&
+            status != 'failed') {
+          return body as T;
         }
-        throw MoneyflyApiException((body['message'] ?? '请求失败').toString());
+        if (code == 0 ||
+            code == '0' ||
+            success == true ||
+            status == 'success' ||
+            status == 'ok') {
+          final data = hasData ? body['data'] : body;
+          return _castResponse<T>(data);
+        }
+        if (code == null && success == null && hasData) {
+          return _castResponse<T>(body['data']);
+        }
+        if (code == null && success == null && status != null) {
+          return body as T;
+        }
+        throw MoneyflyApiException(_messageFromMap(body, '请求失败'));
       }
       return body as T;
     } on DioException catch (err) {
@@ -264,7 +334,7 @@ class MoneyflyApi {
       final data = response?.data;
       if (data is Map<String, dynamic>) {
         throw MoneyflyApiException(
-          (data['message'] ?? err.message ?? '网络请求失败').toString(),
+          _messageFromMap(data, err.message ?? '网络请求失败'),
           statusCode: response?.statusCode,
         );
       }
@@ -304,6 +374,64 @@ class MoneyflyApi {
           .map((e) => e.cast<String, dynamic>())
           .toList();
     }
+    if (value is Map) {
+      final map = value.cast<String, dynamic>();
+      var sawListKey = false;
+      for (final key in const [
+        'devices',
+        'methods',
+        'packages',
+        'orders',
+        'list',
+        'items',
+        'records',
+        'rows',
+        'data',
+        'result',
+      ]) {
+        final nested = map[key];
+        if (nested == null || identical(nested, value)) {
+          continue;
+        }
+        if (nested is List) {
+          sawListKey = true;
+        }
+        final list = _asList(nested);
+        if (list.isNotEmpty) {
+          return list;
+        }
+      }
+      if (sawListKey) {
+        return [];
+      }
+      if (map.isNotEmpty) {
+        return [map];
+      }
+    }
     return [];
+  }
+
+  String _messageFromMap(Map<String, dynamic> data, String fallback) {
+    for (final key in const ['message', 'msg', 'error', 'detail', 'reason']) {
+      final value = data[key];
+      if (value == null) {
+        continue;
+      }
+      final text = value.toString().trim();
+      if (text.isNotEmpty && text != 'null') {
+        return text;
+      }
+    }
+    return fallback;
+  }
+
+  T _castResponse<T>(dynamic data) {
+    if (data == null && T == dynamic) {
+      return data as T;
+    }
+    if (data == null) {
+      return <String, dynamic>{} as T;
+    }
+    return data as T;
   }
 }
