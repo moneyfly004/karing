@@ -33,7 +33,11 @@ jobs:
 
       - name: Install Android SDK components
         run: |
-          sdkmanager "platforms;android-35" "build-tools;36.0.0" "ndk;28.2.13676358"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-35" \
+            "build-tools;36.0.0" \
+            "ndk;28.2.13676358"
 
       - name: Install dependencies
         run: flutter pub get
