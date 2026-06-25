@@ -75,6 +75,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Run compatibility tests
+        run: flutter test test/widget_test.dart
+
       - name: Build release APKs
         run: |
           flutter build apk --release
@@ -481,6 +484,7 @@ jobs:
             curl \
             libc-ares-dev \
             libayatana-appindicator3-dev \
+            libcurl4-gnutls-dev \
             libcurl4-openssl-dev \
             libfuse2 \
             libgtk-3-dev \
@@ -550,8 +554,13 @@ jobs:
         env:
           CMAKE_PREFIX_PATH: /usr
           CURL_ROOT: /usr
+          CURL_INCLUDE_DIR: /usr/include/x86_64-linux-gnu
+          CURL_LIBRARY: /usr/lib/x86_64-linux-gnu/libcurl.so
+          PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
         run: |
           set -e
+          pkg-config --modversion libcurl
+          pkg-config --libs --cflags libcurl
           flutter_distributor package --platform linux --targets deb,rpm,appimage || {
             status=$?
             echo "Linux packaging failed with exit code ${status}"

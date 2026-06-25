@@ -466,9 +466,11 @@ _PaymentValue _classifyBackendPaymentValue(
   }
 
   final lowerPayType = payType.toLowerCase();
-  if ((lowerPayType == 'alipay' || lowerPayType == 'codepay_alipay') &&
-      _looksLikeAlipayPreCreateQr(value)) {
-    return _PaymentValue(qrCode: value);
+  if (lowerPayType == 'alipay' || lowerPayType == 'codepay_alipay') {
+    if (_looksLikeAlipayPreCreateQr(value) ||
+        _looksLikeAlipayQrPayload(value)) {
+      return _PaymentValue(qrCode: value);
+    }
   }
 
   if (_looksLikePaymentScheme(value)) {
@@ -530,6 +532,17 @@ bool _looksLikeAlipayPreCreateQr(String value) {
           (path.contains('/qr/') ||
               path.contains('qrcode') ||
               uri.query.toLowerCase().contains('qrcode')));
+}
+
+bool _looksLikeAlipayQrPayload(String value) {
+  final text = value.toLowerCase();
+  return text.startsWith('https://qr.alipay.com/') ||
+      text.startsWith('http://qr.alipay.com/') ||
+      text.startsWith('alipayqr://') ||
+      text.startsWith('alipays://platformapi/startapp?') ||
+      text.contains('sa_id=10000007') ||
+      text.contains('qrcode=') ||
+      text.contains('qr_code=');
 }
 
 dynamic _tryDecodeJson(String value) {

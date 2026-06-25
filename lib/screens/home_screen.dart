@@ -320,10 +320,6 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     );
 
     LocalStorage.write(userAgreementAgreedIdKey, "true");
-    bool noConfig = ServerManager.getConfig().getServersCount(false) == 0;
-    if (noConfig) {
-      onTapAddProfileByAgreement();
-    }
   }
 
   void checkError(String from, {bool showAlert = true}) async {

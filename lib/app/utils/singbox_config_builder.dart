@@ -197,28 +197,47 @@ class SingboxConfigSanitizer {
       config["dns"] = sanitizeDnsMap(dns);
     }
     _migrateLegacyInboundFields(config);
+    _migrateLegacySpecialOutbounds(config);
+    _ensureDefaultDomainResolver(config);
     return config;
   }
 
   static Map<String, dynamic> sanitizeDnsMap(Map<dynamic, dynamic> map) {
     final dns = _stringKeyMap(map);
+    final rcodeServers = <String, String>{};
     final servers = dns["servers"];
     if (servers is List) {
       final sanitizedServers = <dynamic>[];
       for (final server in servers) {
         if (server is Map) {
-          sanitizedServers.add(sanitizeDnsServerMap(server));
+          final sanitizedServer = sanitizeDnsServerMap(server);
+          final rcode = sanitizedServer.remove("_rcode")?.toString();
+          final tag = sanitizedServer["tag"]?.toString();
+          if (rcode != null && tag != null && tag.isNotEmpty) {
+            rcodeServers[tag] = rcode;
+            continue;
+          }
+          sanitizedServers.add(sanitizedServer);
         } else {
           sanitizedServers.add(server);
         }
       }
       dns["servers"] = sanitizedServers;
     }
+    _migrateDnsRules(dns, rcodeServers);
+    final finalServer = dns["final"]?.toString();
+    if (finalServer != null && rcodeServers.containsKey(finalServer)) {
+      dns["final"] = kDnsTagDirect;
+    }
+    dns.remove("fakeip");
     return dns;
   }
 
   static Map<String, dynamic> sanitizeDnsServerMap(Map<dynamic, dynamic> map) {
     final server = _stringKeyMap(map);
+    if (server["type"] != null) {
+      return server;
+    }
     final tag = server["tag"]?.toString() ?? "";
     final address = server["address"]?.toString() ?? "";
     final addresses = _listString(server["addresses"]);
@@ -228,14 +247,14 @@ class SingboxConfigSanitizer {
       addresses: addresses,
     );
 
-    server["address"] = normalized;
+    server.remove("address");
     server.remove("addresses");
 
-    if (normalized == "fakeip" || normalized.startsWith("rcode://")) {
-      server.remove("address_resolver");
-      server.remove("detour");
+    final migrated = _migrateLegacyDnsServer(server, normalized);
+    if (normalized.startsWith("rcode://")) {
+      migrated["_rcode"] = normalized.substring("rcode://".length);
     }
-    return server;
+    return migrated;
   }
 
   static String normalizeDnsAddressForTag(
@@ -326,6 +345,346 @@ class SingboxConfigSanitizer {
       return value.map((item) => item.toString()).toList();
     }
     return const [];
+  }
+
+  static void _migrateLegacySpecialOutbounds(Map<String, dynamic> config) {
+    final outbounds = config["outbounds"];
+    final dnsOutboundTags = <String>{kOutboundTagDns};
+    final blockOutboundTags = <String>{kOutboundTagBlock};
+    bool hasDirectOutbound = false;
+    if (outbounds is List) {
+      for (final outbound in outbounds) {
+        if (outbound is! Map) {
+          continue;
+        }
+        final outboundMap = _stringKeyMap(outbound);
+        final type = outboundMap["type"]?.toString();
+        final tag = outboundMap["tag"]?.toString();
+        if (type == kOutboundTypeDns && tag != null && tag.isNotEmpty) {
+          dnsOutboundTags.add(tag);
+        } else if (type == kOutboundTypeBlock &&
+            tag != null &&
+            tag.isNotEmpty) {
+          blockOutboundTags.add(tag);
+        } else if (type == kOutboundTypeDirect) {
+          hasDirectOutbound = true;
+        }
+      }
+
+      final sanitizedOutbounds = <dynamic>[];
+      var needsDirectFallback = false;
+      for (final outbound in outbounds) {
+        if (outbound is Map) {
+          final outboundMap = _stringKeyMap(outbound);
+          if (outboundMap["type"] == kOutboundTypeDns) {
+            continue;
+          }
+          if (outboundMap["type"] == kOutboundTypeBlock) {
+            continue;
+          }
+          needsDirectFallback = _removeSpecialOutboundReferences(outboundMap, {
+                ...dnsOutboundTags,
+                ...blockOutboundTags,
+              }) ||
+              needsDirectFallback;
+          sanitizedOutbounds.add(outboundMap);
+        } else {
+          sanitizedOutbounds.add(outbound);
+        }
+      }
+      if (!hasDirectOutbound && needsDirectFallback) {
+        sanitizedOutbounds
+            .add({'type': kOutboundTypeDirect, 'tag': kOutboundTagDirect});
+      }
+      config["outbounds"] = sanitizedOutbounds;
+    }
+
+    final route = config["route"];
+    if (route is! Map) {
+      return;
+    }
+    final routeMap = _stringKeyMap(route);
+    config["route"] = routeMap;
+    final rules = routeMap["rules"];
+    if (rules is! List) {
+      return;
+    }
+
+    routeMap["rules"] = rules.map((rule) {
+      if (rule is! Map) {
+        return rule;
+      }
+      final ruleMap = _stringKeyMap(rule);
+      return _migrateRouteRule(ruleMap, dnsOutboundTags, blockOutboundTags);
+    }).toList();
+
+    final finalOutbound = routeMap["final"]?.toString();
+    if (finalOutbound != null && blockOutboundTags.contains(finalOutbound)) {
+      routeMap["final"] = kOutboundTagDirect;
+      _ensureDirectOutbound(config);
+      (routeMap["rules"] as List).add({
+        "action": "reject",
+        "name": "final[block]",
+      });
+    } else if (finalOutbound != null &&
+        dnsOutboundTags.contains(finalOutbound)) {
+      routeMap["final"] = kOutboundTagDirect;
+      _ensureDirectOutbound(config);
+    }
+  }
+
+  static void _ensureDirectOutbound(Map<String, dynamic> config) {
+    final outbounds = config["outbounds"];
+    if (outbounds is! List) {
+      config["outbounds"] = [
+        {'type': kOutboundTypeDirect, 'tag': kOutboundTagDirect}
+      ];
+      return;
+    }
+    final hasDirectOutbound = outbounds.any((outbound) {
+      return outbound is Map &&
+          outbound["type"] == kOutboundTypeDirect &&
+          outbound["tag"] == kOutboundTagDirect;
+    });
+    if (!hasDirectOutbound) {
+      outbounds.add({'type': kOutboundTypeDirect, 'tag': kOutboundTagDirect});
+    }
+  }
+
+  static bool _removeSpecialOutboundReferences(
+    Map<String, dynamic> outbound,
+    Set<String> specialTags,
+  ) {
+    var needsDirectFallback = false;
+    final nestedOutbounds = outbound["outbounds"];
+    if (nestedOutbounds is List) {
+      final cleaned = <String>[];
+      for (final item in nestedOutbounds) {
+        final tag = item.toString();
+        if (specialTags.contains(tag)) {
+          needsDirectFallback = true;
+          continue;
+        }
+        if (!cleaned.contains(tag)) {
+          cleaned.add(tag);
+        }
+      }
+      if (cleaned.isEmpty) {
+        cleaned.add(kOutboundTagDirect);
+        needsDirectFallback = true;
+      }
+      outbound["outbounds"] = cleaned;
+    }
+
+    final detour = outbound["detour"]?.toString();
+    if (detour != null && specialTags.contains(detour)) {
+      outbound.remove("detour");
+    }
+    final defaultOutbound = outbound["default"]?.toString();
+    if (defaultOutbound != null && specialTags.contains(defaultOutbound)) {
+      outbound.remove("default");
+    }
+    return needsDirectFallback;
+  }
+
+  static Map<String, dynamic> _migrateRouteRule(
+    Map<String, dynamic> ruleMap,
+    Set<String> dnsOutboundTags,
+    Set<String> blockOutboundTags,
+  ) {
+    final protocol = ruleMap["protocol"]?.toString();
+    final outbound = ruleMap["outbound"]?.toString();
+    if (outbound != null && blockOutboundTags.contains(outbound)) {
+      ruleMap.remove("outbound");
+      ruleMap["action"] = "reject";
+      return ruleMap;
+    }
+    if (protocol == kOutboundTypeDns &&
+        outbound != null &&
+        dnsOutboundTags.contains(outbound)) {
+      ruleMap.remove("outbound");
+      ruleMap["action"] = "hijack-dns";
+      return ruleMap;
+    }
+    if (outbound != null &&
+        outbound.isNotEmpty &&
+        !dnsOutboundTags.contains(outbound) &&
+        ruleMap["action"] == null) {
+      ruleMap["action"] = "route";
+    }
+    return ruleMap;
+  }
+
+  static Map<String, dynamic> _migrateLegacyDnsServer(
+    Map<String, dynamic> legacy,
+    String address,
+  ) {
+    final server = <String, dynamic>{};
+    final tag = legacy["tag"]?.toString();
+    if (tag != null && tag.isNotEmpty) {
+      server["tag"] = tag;
+    }
+
+    void copyDialFields() {
+      final addressResolver = legacy["address_resolver"]?.toString();
+      if (addressResolver != null && addressResolver.isNotEmpty) {
+        server["domain_resolver"] = addressResolver;
+      }
+      final addressStrategy = legacy["address_strategy"]?.toString();
+      if (addressStrategy != null && addressStrategy.isNotEmpty) {
+        server["domain_strategy"] = addressStrategy;
+      }
+      final detour = legacy["detour"]?.toString();
+      if (detour != null && detour.isNotEmpty) {
+        server["detour"] = detour;
+      }
+    }
+
+    if (address == "local") {
+      server["type"] = "local";
+      return server;
+    }
+    if (address.startsWith("dhcp://")) {
+      server["type"] = "dhcp";
+      final iface = address.substring("dhcp://".length);
+      if (iface.isNotEmpty && iface != "auto") {
+        server["interface"] = iface;
+      }
+      copyDialFields();
+      return server;
+    }
+    if (address == "fakeip") {
+      server["type"] = "fakeip";
+      server["inet4_range"] = "198.20.0.0/15";
+      return server;
+    }
+    if (address.startsWith("rcode://")) {
+      server["_rcode"] = address.substring("rcode://".length);
+      return server;
+    }
+
+    final uri = Uri.tryParse(address);
+    if (uri != null && uri.hasScheme) {
+      switch (uri.scheme) {
+        case "udp":
+        case "tcp":
+        case "tls":
+        case "quic":
+          server["type"] = uri.scheme;
+          server["server"] = uri.host.isNotEmpty ? uri.host : uri.path;
+          if (uri.hasPort) {
+            server["server_port"] = uri.port;
+          }
+          copyDialFields();
+          return server;
+        case "https":
+        case "h3":
+          server["type"] = uri.scheme;
+          server["server"] = uri.host;
+          if (uri.hasPort) {
+            server["server_port"] = uri.port;
+          }
+          if (uri.path.isNotEmpty && uri.path != "/") {
+            server["path"] = uri.path;
+          }
+          copyDialFields();
+          return server;
+      }
+    }
+
+    server["type"] = "udp";
+    server["server"] = address;
+    copyDialFields();
+    return server;
+  }
+
+  static void _migrateDnsRules(
+    Map<String, dynamic> dns,
+    Map<String, String> rcodeServers,
+  ) {
+    final rules = dns["rules"];
+    if (rules is! List) {
+      return;
+    }
+
+    dns["rules"] = rules.map((rule) {
+      if (rule is! Map) {
+        return rule;
+      }
+      final ruleMap = _stringKeyMap(rule);
+      final server = ruleMap["server"]?.toString();
+      if (server != null && rcodeServers.containsKey(server)) {
+        ruleMap.remove("server");
+        ruleMap.remove("rewrite_ttl");
+        ruleMap.remove("disable_cache");
+        ruleMap["action"] = "predefined";
+        ruleMap["rcode"] = _rcodeName(rcodeServers[server]!);
+        return ruleMap;
+      }
+      if (server != null && server.isNotEmpty && ruleMap["action"] == null) {
+        ruleMap["action"] = "route";
+      }
+      return ruleMap;
+    }).toList();
+  }
+
+  static String _rcodeName(String legacyRcode) {
+    switch (legacyRcode) {
+      case "format_error":
+        return "FORMERR";
+      case "server_failure":
+        return "SERVFAIL";
+      case "name_error":
+        return "NXDOMAIN";
+      case "not_implemented":
+        return "NOTIMP";
+      case "refused":
+        return "REFUSED";
+      case "success":
+      default:
+        return "NOERROR";
+    }
+  }
+
+  static void _ensureDefaultDomainResolver(Map<String, dynamic> config) {
+    final route = config["route"];
+    if (route is! Map) {
+      return;
+    }
+    final routeMap = _stringKeyMap(route);
+    config["route"] = routeMap;
+    if (routeMap["default_domain_resolver"] != null) {
+      return;
+    }
+
+    final dns = config["dns"];
+    if (dns is! Map) {
+      return;
+    }
+    final resolverTag = _firstDnsServerTag(dns);
+    if (resolverTag == null) {
+      return;
+    }
+    routeMap["default_domain_resolver"] = resolverTag;
+  }
+
+  static String? _firstDnsServerTag(Map<dynamic, dynamic> dns) {
+    final servers = dns["servers"];
+    if (servers is! List) {
+      return null;
+    }
+    for (final server in servers) {
+      if (server is! Map) {
+        continue;
+      }
+      final tag = server["tag"]?.toString();
+      final type = server["type"]?.toString();
+      if (tag == null || tag.isEmpty || type == "fakeip") {
+        continue;
+      }
+      return tag;
+    }
+    return null;
   }
 
   static void _migrateLegacyInboundFields(Map<String, dynamic> config) {
@@ -749,16 +1108,6 @@ class SingboxOutboundOptions {
 class SingboxOutboundDirect extends SingboxOutboundOptions {
   Map<String, dynamic> toJson() =>
       {'type': kOutboundTypeDirect, 'tag': kOutboundTagDirect};
-}
-
-class SingboxOutboundBlock extends SingboxOutboundOptions {
-  Map<String, dynamic> toJson() =>
-      {'type': kOutboundTypeBlock, 'tag': kOutboundTagBlock};
-}
-
-class SingboxOutboundDNS extends SingboxOutboundOptions {
-  Map<String, dynamic> toJson() =>
-      {'type': kOutboundTypeDns, 'tag': kOutboundTagDns};
 }
 
 class SingboxOutboundUrltest extends SingboxOutboundOptions {
@@ -1414,14 +1763,11 @@ class SingboxConfigBuilder {
     allOutBoundsTags.add(urltest.tag);
     allOutBoundsTags.add(kOutboundTagDirect);
     allOutBoundsTags.add(kOutboundTagBlock);
-    allOutBoundsTags.add(kOutboundTagDns);
 
     newoutbounds.addAll(outbounds);
     newoutbounds.add(urltest.toJson());
 
     newoutbounds.add(SingboxOutboundDirect().toJson());
-    newoutbounds.add(SingboxOutboundBlock().toJson());
-    newoutbounds.add(SingboxOutboundDNS().toJson());
 
     return newoutbounds;
   }
@@ -1520,7 +1866,7 @@ class SingboxConfigBuilder {
 
     route.rules.add({
       "protocol": kOutboundTypeDns,
-      "outbound": kOutboundTagDns,
+      "action": "hijack-dns",
     });
     bool enableFakeIp = setting.dns.proxyResolveMode ==
         SettingConfigItemDNSProxyResolveMode.fakeip;
