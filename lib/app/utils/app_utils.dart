@@ -8,7 +8,7 @@ abstract final class AppUtils {
   static Future<String> getPackgetVersion() async {
     try {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      return "${packageInfo.version}.${packageInfo.buildNumber}";
+      return packageInfo.version;
     } catch (e) {
       return getBuildinVersion();
     }
@@ -19,12 +19,19 @@ abstract final class AppUtils {
   }
 
   static String getReleaseVersion() {
-    List<String> v = getBuildinVersion().split(".");
-    return "${v[0]}.${v[1]}.${v[2]}+${v[3]}";
+    final version = getBuildinVersion();
+    if (version.contains("+")) {
+      return version;
+    }
+    final parts = version.split(".");
+    if (parts.length >= 4) {
+      return "${parts[0]}.${parts[1]}.${parts[2]}+${parts.sublist(3).join(".")}";
+    }
+    return version;
   }
 
   static String getBuildinVersion() {
-    return "1.1.3.703";
+    return "1.0.0";
   }
 
   static String getId() {

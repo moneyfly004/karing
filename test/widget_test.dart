@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:karing/app/modules/setting_manager.dart';
+import 'package:karing/app/modules/server_manager.dart';
+import 'package:karing/app/utils/proxy_conf_utils.dart';
+import 'package:karing/app/utils/singbox_config_builder.dart';
+import 'package:karing/app/utils/version_compare_utils.dart';
 import 'package:karing/features/moneyfly/moneyfly_models.dart';
 
 void main() {
@@ -73,6 +77,39 @@ void main() {
         expect(list, isNotEmpty);
         expect(list.any((address) => address.trim().isEmpty), isFalse);
       }
+    });
+  });
+
+  group('Version comparison', () {
+    test('treats Flutter build suffix as packaging metadata', () {
+      expect(VersionCompareUtils.compareVersion('1.0.0', '1.0.0+1'), 0);
+      expect(VersionCompareUtils.compareVersion('1.0.0+1', '1.0.0'), 0);
+    });
+
+    test('compares uneven version segments numerically', () {
+      expect(VersionCompareUtils.compareVersion('1.0.0', '1.0.1'), -1);
+      expect(VersionCompareUtils.compareVersion('1.0.0', '1.2.20.2308'), -1);
+      expect(VersionCompareUtils.compareVersion('1.2.20.2308', '1.0.0'), 1);
+    });
+  });
+
+  group('Current server selection', () {
+    test('keeps global urltest as valid startup selection', () {
+      final current =
+          ServerManager.resolveCurrentServer(ServerManager.getUrltest());
+
+      expect(current, isNotNull);
+      expect(current!.groupid, ServerManager.getUrltestGroupId());
+      expect(current.tag, kOutboundTagUrltest);
+    });
+
+    test('rejects stale concrete server selections', () {
+      final stale = ProxyConfig()
+        ..groupid = 'removed-group'
+        ..type = 'vless'
+        ..tag = 'removed-server';
+
+      expect(ServerManager.resolveCurrentServer(stale), isNull);
     });
   });
 }

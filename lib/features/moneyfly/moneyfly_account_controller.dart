@@ -229,6 +229,7 @@ class MoneyflyAccountController extends ChangeNotifier {
       await _store.saveManagedGroupId(group.groupid);
       ServerManager.getUse().selectDefault = '';
       ServerManager.addRecent(ServerManager.getUrltest());
+      ServerManager.setDirty(true);
       await ServerManager.saveUse();
       await ServerManager.saveServerConfig();
     }

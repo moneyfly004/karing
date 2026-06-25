@@ -632,29 +632,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     checkError("_onInitAllFinish", showAlert: false);
 
     if (_currentServer.tag.isEmpty) {
-      ProxyConfig? config = ServerManager.getMostRecent();
-      if (config != null) {
-        _currentServer = config;
-        if (_currentServer.groupid != ServerManager.getUrltestGroupId()) {
-          ProxyConfig? server =
-              ServerManager.getConfig().getByTag(_currentServer.tag);
-          if (server != null) {
-            _currentServer = server;
-          }
-        } else {
-          _currentServer.latency = "";
-        }
-        VPNService.setCurrent(_currentServer);
-        _currentServerForUrltest.clear();
-      } else {
-        if (ServerManager.getConfig().getServersCount(false) > 0) {
-          _currentServer = ServerManager.getUrltest();
-          VPNService.setCurrent(_currentServer);
-          _currentServerForUrltest.clear();
-          ServerManager.addRecent(_currentServer);
-          ServerManager.saveUse();
-        }
-      }
+      await _restoreCurrentServerFromConfig(persist: true);
     }
 
     SchemeHandler.vpnConnect = _vpnSchemeConnect;
@@ -802,11 +780,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
 
   Future<void> _onAddConfig(ServerConfigGroupItem item) async {
     if (_currentServer.groupid.isEmpty) {
-      _currentServer = ServerManager.getUrltest();
-      VPNService.setCurrent(_currentServer);
-
-      ServerManager.addRecent(_currentServer);
-      ServerManager.saveUse();
+      await _restoreCurrentServerFromConfig(persist: true);
     }
     var settingConfig = SettingManager.getConfig();
     if (settingConfig.autoBackup.addProfile) {
@@ -918,25 +892,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
       await stop();
       return;
     }
-    ProxyConfig? config = ServerManager.getMostRecent();
-    if (config != null) {
-      _currentServer = config;
-      if (_currentServer.groupid != ServerManager.getUrltestGroupId()) {
-        ProxyConfig? server =
-            ServerManager.getConfig().getByTag(_currentServer.tag);
-        if (server != null) {
-          _currentServer = server;
-        }
-      }
-
-      VPNService.setCurrent(_currentServer);
-    } else {
-      _currentServer = ServerManager.getUrltest();
-      VPNService.setCurrent(_currentServer);
-
-      ServerManager.addRecent(_currentServer);
-      ServerManager.saveUse();
-    }
+    await _restoreCurrentServerFromConfig(persist: true);
 
     setState(() {});
   }
@@ -1074,6 +1030,31 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     }
 
     return Tuple2(null, options.allOutboundsTags.length);
+  }
+
+  Future<bool> _restoreCurrentServerFromConfig({bool persist = false}) async {
+    bool noConfig = ServerManager.getConfig().getServersCount(false) == 0;
+    if (noConfig) {
+      _currentServer = ProxyConfig();
+      VPNService.setCurrent(_currentServer);
+      _currentServerForUrltest.clear();
+      return false;
+    }
+
+    final recent = ServerManager.getMostRecent();
+    final selected = ServerManager.resolveCurrentServer(recent) ??
+        ServerManager.getUrltest();
+    _currentServer = selected;
+    if (_currentServer.groupid == ServerManager.getUrltestGroupId()) {
+      _currentServer.latency = "";
+    }
+    VPNService.setCurrent(_currentServer);
+    _currentServerForUrltest.clear();
+    if (persist) {
+      ServerManager.addRecent(_currentServer);
+      await ServerManager.saveUse();
+    }
+    return true;
   }
 
   Future<void> setServerAndReload(String from) async {
@@ -1639,11 +1620,7 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
     }
     if (SettingManager.getDirty() || ServerManager.getDirty()) {
       if (_currentServer.groupid.isEmpty) {
-        _currentServer = ServerManager.getUrltest();
-        VPNService.setCurrent(_currentServer);
-
-        ServerManager.addRecent(_currentServer);
-        ServerManager.saveUse();
+        await _restoreCurrentServerFromConfig(persist: true);
       }
       if (SettingManager.getDirty()) {
         SettingManager.setDirty(false);
@@ -1732,6 +1709,9 @@ class _HomeScreenState extends LasyRenderingState<HomeScreen>
       }
       Log.w("start failed: no server avaliable");
       return ReturnResultError("start failed: no server avaliable");
+    }
+    if (_currentServer.groupid.isEmpty) {
+      await _restoreCurrentServerFromConfig(persist: true);
     }
     if (_currentServer.groupid.isEmpty) {
       if (!disableShowAlertDialog) {

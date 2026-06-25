@@ -30,7 +30,7 @@ jobs:
       - name: Set release names
         run: |
           VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
-          VERSION="${VERSION_RAW/+/.}"
+          VERSION="${VERSION_RAW%%+*}"
           echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
@@ -113,7 +113,7 @@ jobs:
       - name: Set release names
         run: |
           $versionRaw = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(\S+)' | Select-Object -First 1).Matches.Groups[1].Value
-          $version = $versionRaw.Replace('+', '.')
+          $version = $versionRaw.Split('+')[0]
           "VERSION_RAW=$versionRaw" | Out-File -FilePath $env:GITHUB_ENV -Append
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
           "ASSET_PREFIX=karing_$version" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -201,7 +201,7 @@ jobs:
       - name: Set release names
         run: |
           VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
-          VERSION="${VERSION_RAW/+/.}"
+          VERSION="${VERSION_RAW%%+*}"
           echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
@@ -460,7 +460,7 @@ jobs:
       - name: Set release names
         run: |
           VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
-          VERSION="${VERSION_RAW/+/.}"
+          VERSION="${VERSION_RAW%%+*}"
           echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
@@ -599,7 +599,7 @@ jobs:
       - name: Set release names
         run: |
           VERSION_RAW="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
-          VERSION="${VERSION_RAW/+/.}"
+          VERSION="${VERSION_RAW%%+*}"
           echo "VERSION_RAW=${VERSION_RAW}" >> "$GITHUB_ENV"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
           echo "ASSET_PREFIX=karing_${VERSION}" >> "$GITHUB_ENV"
@@ -642,7 +642,8 @@ jobs:
           {
             echo "Automated GitHub Actions release."
             echo
-            echo "Version: ${VERSION_RAW}"
+            echo "Version: ${VERSION}"
+            echo "Flutter package version: ${VERSION_RAW}"
             echo "Commit: ${GITHUB_SHA}"
             echo
             echo "Assets follow the upstream Karing release naming pattern:"
@@ -659,6 +660,6 @@ jobs:
           fi
 
           gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
-            --title "Karing ${VERSION_RAW} (run ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT})" \
+            --title "Karing ${VERSION} (run ${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT})" \
             --notes-file release-notes.md \
             --target "$GITHUB_SHA"

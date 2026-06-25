@@ -1963,6 +1963,35 @@ class ServerManager {
     return _use.recent.first;
   }
 
+  static ProxyConfig? resolveCurrentServer(ProxyConfig? config) {
+    if (config == null || config.groupid.isEmpty) {
+      return null;
+    }
+    if (config.groupid == getUrltestGroupId()) {
+      if (config.tag == kOutboundTagUrltest) {
+        return getUrltest();
+      }
+      ServerConfigGroupItem custom = getCustomGroup();
+      for (var urltest in custom.urltests) {
+        if (urltest.remark == config.tag) {
+          return getUrltest(tag: config.tag);
+        }
+      }
+      return getUrltest();
+    }
+    if (config.groupid == getDirectGroupId()) {
+      return getDirect();
+    }
+    if (config.groupid == getBlockGroupId()) {
+      return getBlock();
+    }
+    ServerConfigGroupItem? group = getByGroupId(config.groupid);
+    if (group == null || !group.enable) {
+      return null;
+    }
+    return group.getByTag(config.tag);
+  }
+
   static void toggleFav(ProxyConfig config) {
     bool remove = false;
     for (int i = 0; i < _use.fav.length; ++i) {
