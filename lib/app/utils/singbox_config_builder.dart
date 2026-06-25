@@ -186,6 +186,7 @@ class SingboxConfigSanitizer {
     if (dns is Map) {
       config["dns"] = sanitizeDnsMap(dns);
     }
+    _migrateLegacyInboundFields(config);
     return config;
   }
 
@@ -315,6 +316,69 @@ class SingboxConfigSanitizer {
       return value.map((item) => item.toString()).toList();
     }
     return const [];
+  }
+
+  static void _migrateLegacyInboundFields(Map<String, dynamic> config) {
+    final inbounds = config["inbounds"];
+    if (inbounds is! List) {
+      return;
+    }
+
+    final migratedRules = <Map<String, dynamic>>[];
+    final sanitizedInbounds = <dynamic>[];
+    for (final inbound in inbounds) {
+      if (inbound is! Map) {
+        sanitizedInbounds.add(inbound);
+        continue;
+      }
+      final inboundMap = _stringKeyMap(inbound);
+      final tag = inboundMap["tag"]?.toString() ?? "";
+      final matcher = tag.isEmpty ? null : tag;
+      final domainStrategy = inboundMap.remove("domain_strategy")?.toString();
+      final sniff = inboundMap.remove("sniff");
+      final sniffTimeout = inboundMap.remove("sniff_timeout")?.toString();
+      inboundMap.remove("sniff_override_destination");
+
+      if (tag.isNotEmpty) {
+        if (domainStrategy != null && domainStrategy.isNotEmpty) {
+          migratedRules.add({
+            "inbound": matcher,
+            "action": "resolve",
+            "strategy": domainStrategy,
+          });
+        }
+        if (sniff == true) {
+          migratedRules.add({
+            "inbound": matcher,
+            "action": "sniff",
+            if (sniffTimeout != null && sniffTimeout.isNotEmpty)
+              "timeout": sniffTimeout,
+          });
+        }
+      }
+      sanitizedInbounds.add(inboundMap);
+    }
+    config["inbounds"] = sanitizedInbounds;
+    if (migratedRules.isEmpty) {
+      return;
+    }
+
+    final route = config["route"];
+    Map<String, dynamic> routeMap;
+    if (route is Map) {
+      routeMap = _stringKeyMap(route);
+      config["route"] = routeMap;
+    } else {
+      routeMap = <String, dynamic>{};
+      config["route"] = routeMap;
+    }
+
+    final rules = routeMap["rules"];
+    if (rules is List) {
+      routeMap["rules"] = [...migratedRules, ...rules];
+    } else {
+      routeMap["rules"] = migratedRules;
+    }
   }
 }
 
@@ -457,18 +521,6 @@ class SingboxInboundOptions {
   Map<String, dynamic> toJson() {
     Map<String, dynamic> ret = {};
 
-    if (sniff != null) {
-      ret['sniff'] = sniff;
-    }
-    if (sniff_override_destination != null) {
-      ret['sniff_override_destination'] = sniff_override_destination;
-    }
-    if (sniff_timeout != null) {
-      ret['sniff_timeout'] = sniff_timeout;
-    }
-    if (domain_strategy != null) {
-      ret['domain_strategy'] = domain_strategy;
-    }
     if (detour != null) {
       ret['detour'] = detour;
     }
@@ -1396,6 +1448,7 @@ class SingboxConfigBuilder {
     route.auto_detect_interface = true; //windows下tun模式需要启用,否则会形成回环,爆内存
 
     route.final_ = tagCurrent;
+    _appendInboundActions(route, proxyAll, inbounds);
 
     if (!setting.novice && (exportType != SingboxExportType.singbox)) {
       dnsOptions.static_ips = staticIPs;
@@ -2235,6 +2288,45 @@ class SingboxConfigBuilder {
     values.remove("outlet_region");
 
     return values;
+  }
+
+  static void _appendInboundActions(
+      SingboxRoute route, bool proxyAll, List<dynamic> inbounds) {
+    var setting = SettingManager.getConfig();
+    List<String> inboundTags = _routableInboundTags(inbounds);
+    bool sniffEnabled = setting.novice || setting.sniff.enable;
+    if (!proxyAll &&
+        !setting.novice &&
+        setting.dns.enableInboundDomainResolve) {
+      route.rules.add({
+        "inbound": [kInboundTagMixedRule],
+        "action": "resolve",
+        "strategy": setting.ipStrategy.name,
+        "name": "resolve[inbound]",
+      });
+    }
+    if (sniffEnabled && inboundTags.isNotEmpty) {
+      route.rules.add({
+        "inbound": inboundTags,
+        "action": "sniff",
+        "name": "sniff[inbound]",
+      });
+    }
+  }
+
+  static List<String> _routableInboundTags(List<dynamic> inbounds) {
+    List<String> tags = [];
+    for (var inbound in inbounds) {
+      if (inbound is! Map) {
+        continue;
+      }
+      var tag = inbound["tag"];
+      if (tag is! String || tag.isEmpty) {
+        continue;
+      }
+      tags.add(tag);
+    }
+    return tags;
   }
 
   static void _rulesetAddGeosite(

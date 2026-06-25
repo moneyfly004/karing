@@ -78,6 +78,124 @@ void main() {
         expect(list.any((address) => address.trim().isEmpty), isFalse);
       }
     });
+
+    test('migrates legacy inbound fields to route actions', () {
+      final setting = SettingManager.getConfig();
+      setting.clear();
+      setting.novice = false;
+      setting.sniff.enable = true;
+      setting.dns.enableInboundDomainResolve = true;
+      setting.ipStrategy = IPStrategy.preferIPv4;
+
+      final inbounds = SingboxConfigBuilder.inbounds(
+        false,
+        false,
+        [],
+        SingboxExportType.karing,
+        null,
+      );
+      final dns = SingboxConfigBuilder.dns(
+        false,
+        SingboxExportType.karing,
+        null,
+      );
+      final route = SingboxConfigBuilder.route(
+        '',
+        '',
+        '',
+        [],
+        [],
+        [],
+        false,
+        [],
+        {},
+        null,
+        [],
+        inbounds,
+        dns,
+        {},
+        '',
+        SingboxExportType.karing,
+      );
+
+      for (final inbound in inbounds) {
+        expect(_containsKeyDeep(inbound, 'sniff'), isFalse);
+        expect(
+            _containsKeyDeep(inbound, 'sniff_override_destination'), isFalse);
+        expect(_containsKeyDeep(inbound, 'sniff_timeout'), isFalse);
+        expect(_containsKeyDeep(inbound, 'domain_strategy'), isFalse);
+      }
+
+      expect(
+        route.rules,
+        contains(
+          isA<Map>().having((rule) => rule['action'], 'action', 'sniff').having(
+                (rule) => rule['inbound'],
+                'inbound',
+                containsAll([
+                  kInboundTagMixedDirect,
+                  kInboundTagMixedProxy,
+                  kInboundTagMixedRule,
+                ]),
+              ),
+        ),
+      );
+      expect(
+        route.rules,
+        contains(
+          isA<Map>()
+              .having((rule) => rule['action'], 'action', 'resolve')
+              .having((rule) => rule['inbound'], 'inbound', [
+            kInboundTagMixedRule
+          ]).having((rule) => rule['strategy'], 'strategy', 'prefer_ipv4'),
+        ),
+      );
+    });
+
+    test('repairs legacy inbound fields in existing service config', () {
+      final repaired = SingboxConfigSanitizer.sanitizeConfigMap({
+        'inbounds': [
+          {
+            'type': 'mixed',
+            'tag': 'legacy_in',
+            'sniff': true,
+            'sniff_timeout': '1s',
+            'sniff_override_destination': true,
+            'domain_strategy': 'prefer_ipv4',
+          }
+        ],
+        'route': {
+          'final': kOutboundTagDirect,
+          'rules': [
+            {'inbound': 'legacy_in', 'outbound': kOutboundTagDirect}
+          ],
+        },
+      });
+
+      final inbound = (repaired['inbounds'] as List).single;
+      expect(_containsKeyDeep(inbound, 'sniff'), isFalse);
+      expect(_containsKeyDeep(inbound, 'sniff_override_destination'), isFalse);
+      expect(_containsKeyDeep(inbound, 'sniff_timeout'), isFalse);
+      expect(_containsKeyDeep(inbound, 'domain_strategy'), isFalse);
+
+      final rules = (repaired['route'] as Map)['rules'] as List;
+      expect(
+        rules[0],
+        {
+          'inbound': 'legacy_in',
+          'action': 'resolve',
+          'strategy': 'prefer_ipv4',
+        },
+      );
+      expect(
+        rules[1],
+        {
+          'inbound': 'legacy_in',
+          'action': 'sniff',
+          'timeout': '1s',
+        },
+      );
+    });
   });
 
   group('Version comparison', () {
@@ -112,4 +230,17 @@ void main() {
       expect(ServerManager.resolveCurrentServer(stale), isNull);
     });
   });
+}
+
+bool _containsKeyDeep(Object? value, String key) {
+  if (value is Map) {
+    if (value.containsKey(key)) {
+      return true;
+    }
+    return value.values.any((item) => _containsKeyDeep(item, key));
+  }
+  if (value is Iterable) {
+    return value.any((item) => _containsKeyDeep(item, key));
+  }
+  return false;
 }
