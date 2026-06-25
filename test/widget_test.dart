@@ -253,6 +253,72 @@ void main() {
       );
     });
 
+    test('final config encoding cannot write duplicate inbound tags', () {
+      final encoded = SingboxConfigSanitizer.encodeConfig({
+        'inbounds': [
+          {
+            'type': 'mixed',
+            'tag': kInboundTagMixedDirect,
+            'listen': '127.0.0.1',
+            'listen_port': 3067,
+          },
+          {
+            'type': 'mixed',
+            'tag': kInboundTagMixedDirect,
+            'listen': '127.0.0.1',
+            'listen_port': 3068,
+          },
+          {
+            'type': 'mixed',
+            'tag': kInboundTagMixedRule,
+            'listen': '127.0.0.1',
+            'listen_port': 3069,
+          },
+        ],
+      });
+      final decoded = jsonDecode(encoded) as Map<String, dynamic>;
+      final inbounds = decoded['inbounds'] as List;
+
+      expect(
+        inbounds
+            .where((inbound) =>
+                inbound is Map && inbound['tag'] == kInboundTagMixedDirect)
+            .length,
+        1,
+      );
+      expect(
+        inbounds
+            .where((inbound) =>
+                inbound is Map && inbound['tag'] == kInboundTagMixedRule)
+            .length,
+        1,
+      );
+    });
+
+    test('final config encoding cannot write duplicate outbound tags', () {
+      final encoded = SingboxConfigSanitizer.encodeConfig({
+        'outbounds': [
+          {'type': 'direct', 'tag': kOutboundTagDirect},
+          {'type': 'direct', 'tag': kOutboundTagDirect},
+          {
+            'type': 'selector',
+            'tag': 'Proxy',
+            'outbounds': [kOutboundTagDirect],
+          },
+        ],
+      });
+      final decoded = jsonDecode(encoded) as Map<String, dynamic>;
+      final outbounds = decoded['outbounds'] as List;
+
+      expect(
+        outbounds
+            .where((outbound) =>
+                outbound is Map && outbound['tag'] == kOutboundTagDirect)
+            .length,
+        1,
+      );
+    });
+
     test('migrates deprecated DNS outbound to route action', () {
       final repaired = SingboxConfigSanitizer.sanitizeConfigMap({
         'outbounds': [

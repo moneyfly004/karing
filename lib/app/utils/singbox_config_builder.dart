@@ -197,7 +197,9 @@ class SingboxConfigSanitizer {
       config["dns"] = sanitizeDnsMap(dns);
     }
     _migrateLegacyInboundFields(config);
+    _dedupeTaggedList(config, "inbounds");
     _migrateLegacySpecialOutbounds(config);
+    _dedupeTaggedList(config, "outbounds");
     _ensureDefaultDomainResolver(config);
     return config;
   }
@@ -345,6 +347,32 @@ class SingboxConfigSanitizer {
       return value.map((item) => item.toString()).toList();
     }
     return const [];
+  }
+
+  static void _dedupeTaggedList(Map<String, dynamic> config, String key) {
+    final items = config[key];
+    if (items is! List) {
+      return;
+    }
+
+    final seen = <String>{};
+    final sanitized = <dynamic>[];
+    for (final item in items) {
+      if (item is! Map) {
+        sanitized.add(item);
+        continue;
+      }
+      final itemMap = _stringKeyMap(item);
+      final tag = itemMap["tag"]?.toString();
+      if (tag != null && tag.isNotEmpty) {
+        if (seen.contains(tag)) {
+          continue;
+        }
+        seen.add(tag);
+      }
+      sanitized.add(itemMap);
+    }
+    config[key] = sanitized;
   }
 
   static void _migrateLegacySpecialOutbounds(Map<String, dynamic> config) {
