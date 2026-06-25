@@ -484,7 +484,6 @@ jobs:
             curl \
             libc-ares-dev \
             libayatana-appindicator3-dev \
-            libcurl4-gnutls-dev \
             libcurl4-openssl-dev \
             libfuse2 \
             libgtk-3-dev \
