@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:contextmenu/contextmenu.dart';
 import 'package:flutter/material.dart';
-import 'package:karing/app/extension/colors.dart';
 import 'package:karing/app/modules/biz.dart';
 import 'package:karing/app/modules/server_manager.dart';
 import 'package:karing/app/modules/setting_manager.dart';
@@ -283,7 +282,7 @@ class MyProfilesScreenState extends LasyRenderingState<MyProfilesScreen> {
                     item.enable ? tcontext.meta.enable : tcontext.meta.disable,
                 child: Switch.adaptive(
                   value: item.enable,
-                  activeColor: ThemeDefine.kColorGreenBright,
+                  activeThumbColor: ThemeDefine.kColorGreenBright,
                   onChanged: (bool newValue) async {
                     await onChangedGroup(item.groupid, newValue);
                   },
@@ -1563,8 +1562,7 @@ class MyProfilesScreenState extends LasyRenderingState<MyProfilesScreen> {
         item.groupid,
         SingboxExportType.singbox);
 
-    const JsonEncoder encoder = JsonEncoder.withIndent('  ');
-    String content = encoder.convert(config);
+    String content = SingboxConfigSanitizer.encodeConfig(config);
     try {
       await File(savePath).writeAsString(content, flush: true);
       if (!await FileUtils.validJsonFile(savePath)) {

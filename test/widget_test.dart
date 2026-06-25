@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:karing/app/modules/setting_manager.dart';
@@ -194,6 +196,45 @@ void main() {
           'action': 'sniff',
           'timeout': '1s',
         },
+      );
+    });
+
+    test('final config encoding cannot write legacy inbound fields', () {
+      final encoded = SingboxConfigSanitizer.encodeConfig({
+        'inbounds': [
+          {
+            'type': 'mixed',
+            'tag': 'mixed_in_rule',
+            'sniff': true,
+            'sniff_timeout': '2s',
+            'sniff_override_destination': true,
+            'domain_strategy': 'prefer_ipv4',
+          }
+        ],
+        'route': {'rules': []},
+      });
+      final decoded = jsonDecode(encoded) as Map<String, dynamic>;
+
+      expect(_containsKeyDeep(decoded, 'sniff'), isFalse);
+      expect(_containsKeyDeep(decoded, 'sniff_override_destination'), isFalse);
+      expect(_containsKeyDeep(decoded, 'sniff_timeout'), isFalse);
+      expect(_containsKeyDeep(decoded, 'domain_strategy'), isFalse);
+
+      final rules = (decoded['route'] as Map)['rules'] as List;
+      expect(
+        rules,
+        containsAllInOrder([
+          {
+            'inbound': 'mixed_in_rule',
+            'action': 'resolve',
+            'strategy': 'prefer_ipv4',
+          },
+          {
+            'inbound': 'mixed_in_rule',
+            'action': 'sniff',
+            'timeout': '2s',
+          },
+        ]),
       );
     });
   });

@@ -934,8 +934,7 @@ class VPNService {
         config["inbounds"] = inbounds;
         config["experimental"] = experimental;
         config = SingboxConfigSanitizer.sanitizeConfigMap(config);
-        const JsonEncoder encoder = JsonEncoder.withIndent('  ');
-        String configContent = encoder.convert(config);
+        String configContent = SingboxConfigSanitizer.encodeConfig(config);
         await File(configPath).writeAsString(configContent, flush: true);
         return null;
       } catch (err, stacktrace) {
@@ -1026,8 +1025,7 @@ class VPNService {
       }
     }
 
-    const JsonEncoder encoder = JsonEncoder.withIndent('  ');
-    String configContent = encoder.convert(config);
+    String configContent = SingboxConfigSanitizer.encodeConfig(config);
 
     try {
       await File(configPath).writeAsString(configContent, flush: true);
@@ -1177,8 +1175,7 @@ class VPNService {
     config.outbounds = SingboxConfigBuilder.outbounds(
         false, {}, null, null, [], null, {}, [], SingboxExportType.karing);
     //String configContent = jsonEncode(config);
-    const JsonEncoder encoder = JsonEncoder.withIndent('  ');
-    String configContent = encoder.convert(config);
+    String configContent = SingboxConfigSanitizer.encodeConfig(config);
 
     await File(configPath).writeAsString(configContent, flush: true);
   }

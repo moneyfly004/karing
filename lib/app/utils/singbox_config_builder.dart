@@ -1,5 +1,6 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:karing/app/modules/remote_config_manager.dart';
@@ -179,6 +180,15 @@ class SingboxDNSServerOptions {
 class SingboxConfigSanitizer {
   static const String fallbackDirectDns = "udp://223.5.5.5";
   static const String fallbackRemoteDns = "https://1.1.1.1/dns-query";
+
+  static String encodeConfig(Object? config, {String indent = '  '}) {
+    final encoder = JsonEncoder.withIndent(indent);
+    final decoded = jsonDecode(encoder.convert(config));
+    if (decoded is Map) {
+      return encoder.convert(sanitizeConfigMap(decoded));
+    }
+    return encoder.convert(decoded);
+  }
 
   static Map<String, dynamic> sanitizeConfigMap(Map<dynamic, dynamic> map) {
     final config = _stringKeyMap(map);
