@@ -375,10 +375,33 @@ jobs:
 
       - name: Inject service binary and re-sign app for local use
         run: |
-          APP_PATH="$(find dist -name 'Karing.app' -type d | head -n 1)"
+          DMG_PATH="$(find dist -type f -name '*.dmg' | head -n 1)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "macOS DMG not found in dist:"
+            find dist -maxdepth 5 -print
+            exit 1
+          fi
+          echo "Found DMG at: $DMG_PATH"
+
+          mkdir -p macos-ci-app
+          MOUNT_DIR="$(mktemp -d)"
+          hdiutil attach "$DMG_PATH" -nobrowse -readonly -mountpoint "$MOUNT_DIR"
+          cleanup() {
+            hdiutil detach "$MOUNT_DIR" -quiet || true
+            rm -rf "$MOUNT_DIR"
+          }
+          trap cleanup EXIT
+
+          APP_IN_DMG="$(find "$MOUNT_DIR" -name 'Karing.app' -type d -print | head -n 1)"
+          if [ -z "$APP_IN_DMG" ]; then
+            echo "Karing.app not found in generated DMG:"
+            find "$MOUNT_DIR" -maxdepth 5 -print
+            exit 1
+          fi
+          ditto "$APP_IN_DMG" macos-ci-app/Karing.app
+          APP_PATH="macos-ci-app/Karing.app"
           if [ -z "$APP_PATH" ]; then
-            echo "Karing.app not found in dist:"
-            find dist | head -n 30
+            echo "Karing.app not extracted from generated DMG"
             exit 1
           fi
           echo "Found app at: $APP_PATH"
@@ -407,7 +430,11 @@ jobs:
 
       - name: Repackage DMG with re-signed app
         run: |
-          APP_PATH="$(find dist -name 'Karing.app' -type d | head -n 1)"
+          APP_PATH="macos-ci-app/Karing.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Re-signed Karing.app not found at $APP_PATH"
+            exit 1
+          fi
           mkdir -p release-dist
           APP_DIR="$(dirname "$APP_PATH")"
           hdiutil create -volname "Karing" -srcfolder "$APP_DIR" -ov -format UDZO \

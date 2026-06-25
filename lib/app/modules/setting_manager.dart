@@ -650,14 +650,14 @@ class SettingConfigItemDNS {
       proxyResolveMode = SettingConfigItemDNSProxyResolveMode.fakeip;
     }
 
-    _resolver = ConvertUtils.getListStringFromDynamic(
-        map["resolver_addresses"], true, [])!;
-    _outbound = ConvertUtils.getListStringFromDynamic(
-        map["outbound_addresses"], true, [])!;
-    _direct = ConvertUtils.getListStringFromDynamic(
-        map["direct_addresses"], true, [])!;
-    _proxy = ConvertUtils.getListStringFromDynamic(
-        map["final_addresses"] ?? map["proxy_addresses"], true, [])!;
+    _resolver = _sanitizeDnsList(ConvertUtils.getListStringFromDynamic(
+        map["resolver_addresses"], true, [])!);
+    _outbound = _sanitizeDnsList(ConvertUtils.getListStringFromDynamic(
+        map["outbound_addresses"], true, [])!);
+    _direct = _sanitizeDnsList(ConvertUtils.getListStringFromDynamic(
+        map["direct_addresses"], true, [])!);
+    _proxy = _sanitizeDnsList(ConvertUtils.getListStringFromDynamic(
+        map["final_addresses"] ?? map["proxy_addresses"], true, [])!);
 
     clientSubnet = map["client_subnet"] ?? "";
     clientSubnetLatestUpdate = map["client_subnet_latest_update"] ?? "";
@@ -671,20 +671,20 @@ class SettingConfigItemDNS {
     if (_resolver.isEmpty) {
       var resolver = map["resolver"] ?? "";
       if (resolver.isNotEmpty) {
-        _resolver.add(resolver);
+        _resolver.add(resolver.trim());
       }
     }
 
     if (_outbound.isEmpty) {
       var outbound = map["outbound"] ?? "";
       if (outbound.isNotEmpty) {
-        _outbound.add(outbound);
+        _outbound.add(outbound.trim());
       }
     }
     if (_direct.isEmpty) {
       var direct = map["direct"] ?? "";
       if (direct.isNotEmpty) {
-        _direct.add(direct);
+        _direct.add(direct.trim());
       }
     }
     if (_proxy.isEmpty) {
@@ -693,9 +693,13 @@ class SettingConfigItemDNS {
           map["dns_remote"] ??
           "";
       if (proxy.isNotEmpty) {
-        _proxy.add(proxy);
+        _proxy.add(proxy.trim());
       }
     }
+    _resolver = _sanitizeDnsList(_resolver);
+    _outbound = _sanitizeDnsList(_outbound);
+    _direct = _sanitizeDnsList(_direct);
+    _proxy = _sanitizeDnsList(_proxy);
 
     if (Platform.isAndroid) {
       _resolver.remove(SettingConfigItemDNS.kDNSDHCP);
@@ -758,48 +762,64 @@ class SettingConfigItemDNS {
   }
 
   void setResolverDns(List<String> dns) {
-    _resolver = dns;
+    _resolver = _sanitizeDnsList(dns);
   }
 
   void setOutboundDns(List<String> dns) {
-    _outbound = dns;
+    _outbound = _sanitizeDnsList(dns);
   }
 
   void setDirectDns(List<String> dns) {
-    _direct = dns;
+    _direct = _sanitizeDnsList(dns);
   }
 
   void setProxyDns(List<String> dns) {
-    _proxy = dns;
+    _proxy = _sanitizeDnsList(dns);
   }
 
   void addOrRemoveResolverDns(String dns, bool add) {
+    dns = dns.trim();
+    if (dns.isEmpty) {
+      return;
+    }
     if (add) {
-      _resolver.add(dns);
+      setResolverDns([..._resolver, dns]);
     } else {
       _resolver.remove(dns);
     }
   }
 
   void addOrRemoveOutboundDns(String dns, bool add) {
+    dns = dns.trim();
+    if (dns.isEmpty) {
+      return;
+    }
     if (add) {
-      _outbound.add(dns);
+      setOutboundDns([..._outbound, dns]);
     } else {
       _outbound.remove(dns);
     }
   }
 
   void addOrRemoveDirectDns(String dns, bool add) {
+    dns = dns.trim();
+    if (dns.isEmpty) {
+      return;
+    }
     if (add) {
-      _direct.add(dns);
+      setDirectDns([..._direct, dns]);
     } else {
       _direct.remove(dns);
     }
   }
 
   void addOrRemoveProxyDns(String dns, bool add) {
+    dns = dns.trim();
+    if (dns.isEmpty) {
+      return;
+    }
     if (add) {
-      _proxy.add(dns);
+      setProxyDns([..._proxy, dns]);
     } else {
       _proxy.remove(dns);
     }
@@ -866,7 +886,7 @@ class SettingConfigItemDNS {
   }
 
   List<String> _updateDns(List<String> dns, bool tunMode) {
-    List<String> newDns = dns.toList();
+    List<String> newDns = _sanitizeDnsList(dns);
     if (Platform.isWindows) {
       if (tunMode) {
         bool has = newDns.contains(SettingConfigItemDNS.kDNSDHCP);
@@ -883,6 +903,18 @@ class SettingConfigItemDNS {
       }
     }
     return newDns;
+  }
+
+  static List<String> _sanitizeDnsList(List<String> dns) {
+    List<String> normalized = [];
+    for (final item in dns) {
+      final value = item.trim();
+      if (value.isEmpty || normalized.contains(value)) {
+        continue;
+      }
+      normalized.add(value);
+    }
+    return normalized;
   }
 }
 
