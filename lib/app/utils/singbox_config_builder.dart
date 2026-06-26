@@ -1796,8 +1796,6 @@ class SingboxConfigBuilder {
     newoutbounds.add(urltest.toJson());
 
     newoutbounds.add(SingboxOutboundDirect().toJson());
-    newoutbounds.add({'type': kOutboundTypeBlock, 'tag': kOutboundTagBlock});
-    newoutbounds.add({'type': kOutboundTypeDns, 'tag': kOutboundTagDns});
 
     return newoutbounds;
   }
